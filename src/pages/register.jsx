@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Form, Button } from 'react-bootstrap';
-import {Link} from "react-router-dom";
+import Link from 'next/link';
 
 const Register = () => {
     const [login, setLogin] = useState('');
