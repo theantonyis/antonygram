@@ -1,0 +1,213 @@
+@import url('https://fonts.cdnfonts.com/css/sf-pro-display');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --header-height: 5.5rem;
+}
+
+* {
+    @apply m-0 p-0 box-border font-mono;
+}
+
+main {
+    @apply relative h-screen;
+}
+
+.header {
+    @apply fixed top-0 w-full p-4 text-center text-2xl bg-green-600 text-white flex justify-around items-center;
+    height: var(--header-height);
+}
+
+.header > h1 {
+    @apply absolute mr-[80%];
+}
+
+#form {
+    @apply fixed bottom-0 w-full flex;
+}
+
+#weather {
+    @apply p-7 inline-flex z-10 absolute h-4 text-2xl bg-[#CDCAA6] rounded-md border-2 border-white w-[450px];
+}
+
+#weather > #icon {
+    @apply px-6 h-12 mt-[-25px];
+}
+
+#weather > #temp {
+    @apply ml-4;
+}
+
+#input {
+    @apply w-full h-16 p-4 text-xl font-sans;
+}
+
+.submit {
+    @apply bg-green-600 text-white px-8 font-bold text-xl border-0 font-sans cursor-pointer;
+}
+
+ul {
+    @apply list-none py-[calc(var(--header-height)+0.5rem)] flex flex-col items-start;
+}
+
+li {
+    @apply bg-green-700 rounded-xl text-white p-4 text-xl m-2 font-sans;
+}
+
+.register-page {
+    @apply fixed top-0 left-0 right-0 bottom-0 bg-gray-100 bg-opacity-50 flex justify-center items-center;
+}
+
+.register-container {
+    @apply w-full max-w-md bg-white p-6 rounded-lg shadow-lg relative z-10;
+}
+
+.register-header {
+    @apply text-center mb-4;
+}
+
+.register-header h1 {
+    @apply text-3xl font-bold;
+}
+
+/* Form Styling */
+.register-form {
+    @apply mt-4;
+}
+
+.register-form .form-label {
+    @apply text-gray-700;
+}
+
+.register-form .form-control {
+    @apply w-full p-2 text-xl outline-none rounded-md border-0 mt-2 mb-4;
+}
+
+.register-form .btn-submit {
+    @apply w-full bg-blue-600 text-white px-8 py-2 font-bold rounded-md cursor-pointer;
+}
+
+.register-form .btn-submit:hover {
+    @apply bg-blue-700;
+}
+
+/* Background Overlay */
+.register-page::before {
+    content: "";
+    @apply absolute top-0 left-0 w-full h-full bg-black opacity-50;
+    z-index: -1;
+}
+
+.welcome-form {
+    @apply pt-20 h-[calc(100vh-var(--header-height))] flex justify-center items-center;
+}
+
+.welcome-container {
+    @apply flex flex-col items-center w-1/2 p-6 gap-2 bg-green-600 rounded-xl;
+}
+
+.welcome-button {
+    @apply bg-orange-500 text-white border-0 px-8 py-2 mt-2 text-xl font-bold rounded cursor-pointer text-center;
+}
+
+.welcome-button:hover {
+    @apply shadow-md bg-orange-600;
+}
+
+.buttons {
+    @apply flex absolute gap-4 ml-[40%];
+}
+
+#logout, #clear {
+    @apply px-2 font-sans;
+}
+
+#clear {
+    @apply invisible;
+}
+
+#user {
+    @apply flex ml-[90%] font-sans text-2xl;
+}
+
+.link {
+    @apply text-white no-underline border border-white rounded bg-green-700 text-2xl cursor-pointer;
+}
+
+#reg-new {
+    @apply text-white underline mt-5 text-base cursor-pointer;
+}
+
+@media screen and (max-width: 425px) {
+    #weather {
+        @apply hidden;
+    }
+
+    .header > h1 {
+        @apply text-xl absolute mr-[60%];
+    }
+
+    #reg-new, .register-form__title {
+        @apply whitespace-nowrap;
+    }
+
+    .register-form__container {
+        @apply w-[55vw];
+    }
+}
+
+/* Styles for Login Page */
+.login-page {
+    @apply fixed top-0 left-0 right-0 bottom-0 bg-gray-100 bg-opacity-50 flex justify-center items-center;
+}
+
+.login-container {
+    @apply w-full max-w-md bg-white p-5 rounded-lg shadow-lg relative z-10;
+}
+
+.login-header {
+    @apply text-center mb-4;
+}
+
+.login-header h1 {
+    @apply text-3xl font-bold;
+}
+
+.login-form {
+    @apply mt-4;
+}
+
+.login-form .form-label {
+    @apply text-gray-700;
+}
+
+.login-form .form-control {
+    @apply w-full p-2 text-xl outline-none rounded-md border-0;
+}
+
+.login-form button {
+    @apply w-full bg-blue-600 text-white px-8 py-2 mt-4 font-bold rounded-md cursor-pointer;
+}
+
+.login-form button:hover {
+    @apply bg-blue-700;
+}
+
+.login-form .reg-link {
+    @apply text-blue-500 mt-3 text-center cursor-pointer;
+}
+
+.login-form .reg-link:hover {
+    @apply underline;
+}
+
+/* Background overlay */
+.login-page::before {
+    content: "";
+    @apply absolute top-0 left-0 w-full h-full bg-black opacity-50;
+    z-index: -1;
+}
+
