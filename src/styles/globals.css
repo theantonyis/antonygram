@@ -1,7 +1,6 @@
 @import url('https://fonts.cdnfonts.com/css/sf-pro-display');
 @import "tailwindcss"; /* Ensure this is correct */
-@tailwind base;
-@tailwind components;
+@import "tailwindcss/preflight";
 @tailwind utilities;
 
 :root {
@@ -58,6 +57,7 @@ li {
     @apply bg-green-700 rounded-xl text-white p-4 text-xl m-2 font-sans;
 }
 
+/* Register Page Styling */
 .register-page {
     @apply fixed top-0 left-0 right-0 bottom-0 bg-gray-100/50 flex justify-center items-center;
 }
@@ -71,7 +71,7 @@ li {
 }
 
 .register-header h1 {
-    @apply text-3xl font-bold;
+    @apply text-3xl font-bold text-green-600;
 }
 
 /* Form Styling */
@@ -84,7 +84,7 @@ li {
 }
 
 .register-form .form-control {
-    @apply w-full p-2 text-xl outline-none rounded-md border-0 mt-2 mb-4;
+    @apply w-full p-2 text-lg outline-none rounded-md border-0 mt-2 mb-4 bg-gray-100;
 }
 
 .register-form .btn-submit {
@@ -135,11 +135,11 @@ li {
 }
 
 .link {
-    @apply text-white no-underline border border-white rounded bg-green-700 text-2xl cursor-pointer;
+    @apply no-underline border border-white rounded bg-green-700 text-2xl cursor-pointer;
 }
 
 #reg-new {
-    @apply text-white underline mt-5 text-base cursor-pointer;
+    @apply underline mt-5 text-base cursor-pointer;
 }
 
 @media screen and (max-width: 425px) {
@@ -211,4 +211,5 @@ li {
     @apply absolute top-0 left-0 w-full h-full bg-black opacity-50;
     z-index: -1;
 }
+
 

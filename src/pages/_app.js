@@ -6,10 +6,8 @@ function MyApp({ Component, pageProps }) {
     const router = useRouter();
 
     useEffect(() => {
-        // Ensure the check is only done on the client side
         if (typeof window !== 'undefined') {
-            // Check if the user is logged in (use your logic to check the session)
-            const token = localStorage.getItem('token');
+            const token = document.cookie.split('; ').find(row => row.startsWith('token='));
             const isLoginPage = router.pathname === '/login';
             const isRegisterPage = router.pathname === '/register';
 
