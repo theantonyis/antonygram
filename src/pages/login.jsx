@@ -3,7 +3,7 @@ import {Button, Container, Form, Row, Col, Alert} from 'react-bootstrap';
 import { useRouter } from "next/router";
 
 const Login = () => {
-    const [login, setLogin] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [loading, setLoading] = useState(false);
@@ -21,7 +21,7 @@ const Login = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ login, password }),
+                body: JSON.stringify({ username, password }),
             });
 
             const data = await response.json();
@@ -62,8 +62,8 @@ const Login = () => {
                                 <Form.Control
                                     type="text"
                                     placeholder="Enter your login"
-                                    value={login}
-                                    onChange={(e) => setLogin(e.target.value)}
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
                                     required
                                 />
                             </Form.Group>

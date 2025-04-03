@@ -9,7 +9,10 @@ const Register = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Handle registration logic here, like validation and sending data to the backend.
+        if (password !== passwordRepeat) {
+            alert('Passwords do not match!');
+            return;
+        }
         console.log('Login:', login);
         console.log('Password:', password);
         console.log('Password Repeat:', passwordRepeat);
@@ -63,7 +66,7 @@ const Register = () => {
 
                     {/* "Already have an account?" Link */}
                     <div className="mt-3 text-center">
-                        <p>Already have an account? <Link to="/login" className="text-primary">Login here</Link></p>
+                        <p>Already have an account? <Link href="/login" className="text-primary">Login here</Link></p>
                     </div>
                 </Form>
             </Row>
