@@ -1,9 +1,8 @@
-// pages/chat.js
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Button, Form, ListGroup, Row, Col } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import Head from "next/head";
+import { Trash2, LogOut, Send } from 'lucide-react';
 
 const Chat = () => {
     const [messages, setMessages] = useState([]);
@@ -13,7 +12,6 @@ const Chat = () => {
 
     useEffect(() => {
         const token = document.cookie.split('; ').find(row => row.startsWith('token='));
-        console.log('Token in cookie:', token);  // Log the token value
         if (!token) {
             router.push('/login');
         }
@@ -24,14 +22,14 @@ const Chat = () => {
     };
 
     const handleLogout = () => {
-        document.cookie = 'token=; Max-Age=0';  // Clear the token
-        router.push('/login');  // Redirect to login page
+        document.cookie = 'token=; Max-Age=0; path=/';
+        router.push('/login');
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (input.trim()) {
-            setMessages([...messages, input]);
+            setMessages([...messages, input.trim()]);
             setInput('');
         }
     };
@@ -41,25 +39,30 @@ const Chat = () => {
             <Head>
                 <title>chat | antonygram</title>
             </Head>
-            <Container className="my-5">
+            <Container className="my-5 p-5 rounded-lg shadow-lg bg-white max-w-3xl mx-auto">
                 <header className="text-center mb-4">
-                    <h1>antonygram</h1>
-                    {/* Buttons for Clear chat and Logout */}
-                    <div className="buttons mb-3">
-                        <Button variant="danger" onClick={handleClear} className="me-3">
-                            Clear chat
+                    <h1 className="text-4xl font-bold mb-3 text-indigo-600">antonygram</h1>
+
+                    <div className="flex justify-center gap-4 mb-4">
+                        <Button variant="outline-danger" onClick={handleClear} className="flex items-center gap-2">
+                            <Trash2 size={18} /> Clear chat
                         </Button>
-                        <Button variant="warning" onClick={handleLogout}>
-                            Logout
+                        <Button variant="outline-warning" onClick={handleLogout} className="flex items-center gap-2">
+                            <LogOut size={18} /> Logout
                         </Button>
                     </div>
-                    <h2>{user}</h2>
+
+                    <h2 className="text-xl font-semibold text-gray-700">{user}</h2>
                 </header>
-                <ListGroup className="mb-3">
-                    {messages.map((msg, index) => (
-                        <ListGroup.Item key={index}>{msg}</ListGroup.Item>
+
+                <ListGroup className="mb-3 max-h-96 overflow-y-auto">
+                    {messages.map((msg, i) => (
+                        <ListGroup.Item key={i} className="text-gray-800">
+                            {msg}
+                        </ListGroup.Item>
                     ))}
                 </ListGroup>
+
                 <Form onSubmit={handleSubmit}>
                     <Row>
                         <Col xs={9}>
@@ -68,10 +71,13 @@ const Chat = () => {
                                 placeholder="Enter message..."
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
+                                className="border-indigo-500 focus:ring-indigo-400"
                             />
                         </Col>
                         <Col xs={3}>
-                            <Button type="submit" variant="primary" className="w-100">Send</Button>
+                            <Button type="submit" variant="primary" className="w-full flex items-center justify-center gap-2">
+                                Send <Send size={16} />
+                            </Button>
                         </Col>
                     </Row>
                 </Form>

@@ -1,7 +1,7 @@
 @import url('https://fonts.cdnfonts.com/css/sf-pro-display');
 @import "tailwindcss"; /* Ensure this is correct */
-@import "tailwindcss/preflight";
-@tailwind utilities;
+/*@import "tailwindcss/preflight";*/
+/*@tailwind utilities;*/
 
 :root {
     --header-height: 5.5rem;
@@ -142,23 +142,23 @@ li {
     @apply underline mt-5 text-base cursor-pointer;
 }
 
-@media screen and (max-width: 425px) {
-    #weather {
-        @apply hidden;
-    }
+/*@media screen and (max-width: 425px) {*/
+/*    #weather {*/
+/*        @apply hidden;*/
+/*    }*/
 
-    .header > h1 {
-        @apply text-xl absolute mr-[60%];
-    }
+/*    .header > h1 {*/
+/*        @apply text-xl absolute mr-[60%];*/
+/*    }*/
 
-    #reg-new, .register-form__title {
-        @apply whitespace-nowrap;
-    }
+/*    #reg-new, .register-form__title {*/
+/*        @apply whitespace-nowrap;*/
+/*    }*/
 
-    .register-form__container {
-        @apply w-[55vw];
-    }
-}
+/*    .register-form__container {*/
+/*        @apply w-[55vw];*/
+/*    }*/
+/*}*/
 
 /* Styles for Login Page */
 .login-page {
@@ -174,7 +174,7 @@ li {
 }
 
 .login-header h1 {
-    @apply text-3xl font-bold;
+    @apply text-3xl font-bold text-green-600;
 }
 
 .login-form {
