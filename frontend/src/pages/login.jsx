@@ -33,7 +33,7 @@ const Login = () => {
     return (
         <>
             <Head>
-                <title>Login | antonygram</title>
+                <title>login | antonygram</title>
             </Head>
 
             <div className="login-page fixed inset-0 bg-gray-100/50 flex justify-center items-center">

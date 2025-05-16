@@ -2,6 +2,7 @@ import '../styles/globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 
 function MyApp({ Component, pageProps }) {
     const router = useRouter();
@@ -19,7 +20,14 @@ function MyApp({ Component, pageProps }) {
         }
     }, [router]);
 
-    return <Component {...pageProps} />;
+    return (
+        <>
+            <Head>
+                <link rel="icon" href="/favicon.svg" />
+            </Head>
+            <Component {...pageProps} />
+        </>
+    );
 }
 
 export default MyApp;
