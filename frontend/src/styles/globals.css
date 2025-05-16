@@ -66,17 +66,8 @@ li {
     @apply w-full max-w-md bg-white p-6 rounded-lg shadow-lg relative z-10;
 }
 
-.register-header {
-    @apply text-center mb-4;
-}
-
 .register-header h1 {
     @apply text-3xl font-bold text-green-600;
-}
-
-/* Form Styling */
-.register-form {
-    @apply mt-4;
 }
 
 .register-form .form-label {
@@ -189,13 +180,13 @@ li {
     @apply w-full p-2 text-xl outline-none rounded-md border-0;
 }
 
-.login-form button {
-    @apply w-full bg-blue-600 text-white px-8 py-2 mt-4 font-bold rounded-md cursor-pointer;
-}
+/*.login-form button {*/
+/*    @apply w-full bg-blue-600 text-white px-8 py-2 mt-4 font-bold rounded-md cursor-pointer;*/
+/*}*/
 
-.login-form button:hover {
-    @apply bg-blue-700;
-}
+/*.login-form button:hover {*/
+/*    @apply bg-blue-700;*/
+/*}*/
 
 .login-form .reg-link {
     @apply text-blue-500 mt-3 text-center cursor-pointer;
