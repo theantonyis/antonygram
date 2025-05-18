@@ -1,22 +1,24 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
+import io from 'socket.io-client';
 import { Container, Button, Form, ListGroup, Row, Col } from 'react-bootstrap';
-import Head from "next/head";
+import Head from 'next/head';
 import { Trash2, LogOut, Send } from 'lucide-react';
+import axios from "axios";
+
+const socket = io('http://localhost:5000'); // Backend WebSocket URL
 
 const Chat = () => {
     const [messages, setMessages] = useState([]);
     const [user, setUser] = useState(null);
     const [input, setInput] = useState('');
+    const [contactsList, setContactsList] = useState([]);
+    const [selectedContact, setSelectedContact] = useState(null);
+    const [chatHistory, setChatHistory] = useState({}); // { contactUsername: [...messages] }
+
     const router = useRouter();
     const messagesEndRef = useRef(null);
 
-    // Scroll to bottom on messages update
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
-    // Check token and extract user info on mount
     useEffect(() => {
         const tokenCookie = document.cookie.split('; ').find(row => row.startsWith('token='));
         if (!tokenCookie) {
@@ -24,110 +26,207 @@ const Chat = () => {
             return;
         }
         const token = tokenCookie.split('=')[1];
-
-        // Example: decode token to get username (replace with your real logic)
         try {
-            // Simple base64 decode to simulate user info in token (example only)
             const payload = JSON.parse(atob(token.split('.')[1]));
-            setUser({ username: payload.username || 'Guest' });
+            const username = payload.username || 'Guest';
+            setUser({ username });
+            socket.emit('join', username);
         } catch {
-            // Fallback if decoding fails
             setUser({ username: 'Guest' });
         }
-    }, [router]);
+    }, []);
 
-    const handleClear = () => setMessages([]);
+    // Scroll to latest message
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    useEffect(() => {
+        socket.on('message', ({ from, to, text }) => {
+            const contact = from === user?.username ? to : from;
+
+            setChatHistory(prev => ({
+                ...prev,
+                [contact]: [...(prev[contact] || []), { from, to, text }],
+            }));
+
+            if (contact === selectedContact) {
+                setMessages(prev => [...prev, { from, to, text }]);
+            }
+        });
+
+        return () => {
+            socket.off('message');
+        };
+    }, [user, selectedContact]);
+
+    useEffect(() => {
+        const fetchContacts = async () => {
+            try {
+                const res = await axios.get('/api/contacts', {
+                    headers: {
+                        Authorization: `Bearer ${getToken()}`,
+                    },
+                });
+                setContactsList(res.data.contacts);
+            } catch (error) {
+                console.error('Failed to fetch contacts', error);
+            }
+        };
+
+        fetchContacts();
+    }, []);
+
+    const getToken = () => {
+        const tokenCookie = document.cookie.split('; ').find(row => row.startsWith('token='));
+        return tokenCookie ? tokenCookie.split('=')[1] : '';
+    };
+
     const handleLogout = () => {
         document.cookie = 'token=; Max-Age=0; path=/';
         router.push('/login');
     };
 
-    const handleSubmit = (e) => {
+    const handleSend = (e) => {
         e.preventDefault();
-        if (input.trim()) {
-            setMessages((prev) => [...prev, input.trim()]);
-            setInput('');
+        if (!input.trim() || !selectedContact) return;
+
+        const message = {
+            from: user.username,
+            to: selectedContact,
+            text: input.trim(),
+        };
+
+        socket.emit('message', message);
+
+        setChatHistory(prev => ({
+            ...prev,
+            [selectedContact]: [...(prev[selectedContact] || []), message],
+        }));
+
+        setMessages(prev => [...prev, message]);
+        setInput('');
+    };
+
+    const handleClear = () => {
+        if (selectedContact) {
+            setChatHistory(prev => ({ ...prev, [selectedContact]: [] }));
+            setMessages([]);
         }
     };
+
+    const selectContact = async (contact) => {
+        setSelectedContact(contact);
+
+        try {
+            const res = await axios.get(`/api/messages/${contact}`, {
+                headers: {
+                    Authorization: `Bearer ${getToken()}`,
+                },
+            });
+
+            setChatHistory(prev => ({ ...prev, [contact]: res.data.messages }));
+            setMessages(res.data.messages);
+        } catch (error) {
+            console.error('Failed to fetch messages', error);
+            setMessages([]);
+        }
+    };
+
 
     return (
         <>
             <Head>
-                <title>chat | antonygram</title>
+                <title>Chat | antonygram</title>
             </Head>
 
-            <Container
-                className="my-8 p-6 rounded-lg shadow-lg bg-white max-w-3xl mx-auto"
-                style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column' }}
-            >
-                <header className="text-center mb-5">
-                    <h1 className="text-4xl font-extrabold text-indigo-600 mb-3 select-none">antonygram</h1>
-                    <div className="flex justify-center gap-4 mb-4">
-                        <Button
-                            variant="outline-danger"
-                            onClick={handleClear}
-                            className="flex items-center gap-2 transition hover:bg-red-100"
-                        >
-                            <Trash2 size={18} /> Clear chat
-                        </Button>
+            <Container fluid className="p-4" style={{ minHeight: '100vh' }}>
+                <Row>
+                    <Col md={3} className="border-end">
+                        <h4 className="mb-3">Contacts</h4>
+                        <ListGroup>
+                            {contactsList.filter(c => c !== user?.username).map((contact, idx) => (
+                                <ListGroup.Item
+                                    key={idx}
+                                    action
+                                    active={contact === selectedContact}
+                                    onClick={() => selectContact(contact)}
+                                >
+                                    {contact}
+                                </ListGroup.Item>
+                            ))}
+                        </ListGroup>
                         <Button
                             variant="outline-warning"
                             onClick={handleLogout}
-                            className="flex items-center gap-2 transition hover:bg-yellow-100"
+                            className="mt-4 w-100"
                         >
-                            <LogOut size={18} /> Logout
+                            <LogOut size={16} /> Logout
                         </Button>
-                    </div>
-                    <h2 className="text-xl font-semibold text-gray-700 select-text">
-                        {user?.username || 'Loading...'}
-                    </h2>
-                </header>
+                    </Col>
 
-                <ListGroup
-                    className="flex-grow-1 mb-4 overflow-y-auto rounded border border-gray-200 shadow-inner"
-                    style={{ maxHeight: 'calc(80vh - 220px)', scrollbarWidth: 'thin' }}
-                >
-                    {messages.length === 0 && (
-                        <ListGroup.Item className="text-gray-500 italic text-center">
-                            No messages yet. Start the conversation!
-                        </ListGroup.Item>
-                    )}
+                    <Col md={9}>
+                        <h4 className="mb-3">Chat with {selectedContact || '...'}</h4>
 
-                    {messages.map((msg, i) => (
-                        <ListGroup.Item
-                            key={i}
-                            className="text-gray-800 bg-indigo-50 rounded-md mb-2 shadow-sm border-0"
+                        <ListGroup
+                            className="mb-3 overflow-auto"
+                            style={{ maxHeight: '65vh' }}
                         >
-                            {msg}
-                        </ListGroup.Item>
-                    ))}
+                            {messages.length === 0 && (
+                                <ListGroup.Item className="text-muted text-center">
+                                    No messages yet
+                                </ListGroup.Item>
+                            )}
 
-                    <div ref={messagesEndRef} />
-                </ListGroup>
+                            {messages.map((msg, i) => (
+                                <ListGroup.Item
+                                    key={i}
+                                    className={`d-flex justify-content-${msg.from === user.username ? 'end' : 'start'}`}
+                                >
+                                    <span
+                                        className={`px-3 py-2 rounded ${msg.from === user.username ? 'bg-primary text-white' : 'bg-light text-dark'}`}
+                                    >
+                                        {msg.text}
+                                    </span>
+                                </ListGroup.Item>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </ListGroup>
 
-                <Form onSubmit={handleSubmit} className="mt-auto">
-                    <Row>
-                        <Col xs={9}>
-                            <Form.Control
-                                type="text"
-                                placeholder="Enter message..."
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                className="border-indigo-500 focus:ring-indigo-400 focus:outline-none focus:ring-2 rounded transition"
-                            />
-                        </Col>
-                        <Col xs={3}>
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                disabled={!input.trim()}
-                                className="w-full flex items-center justify-center gap-2 transition hover:bg-indigo-700"
-                            >
-                                Send <Send size={16} />
-                            </Button>
-                        </Col>
-                    </Row>
-                </Form>
+                        <Form onSubmit={handleSend}>
+                            <Row>
+                                <Col xs={9}>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Type a message..."
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
+                                    />
+                                </Col>
+                                <Col xs={3}>
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        className="w-100"
+                                        disabled={!input.trim() || !selectedContact}
+                                    >
+                                        Send <Send size={16} />
+                                    </Button>
+                                </Col>
+                            </Row>
+                            <div className="mt-2 text-end">
+                                <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={handleClear}
+                                    disabled={!selectedContact}
+                                >
+                                    <Trash2 size={16} /> Clear Chat
+                                </Button>
+                            </div>
+                        </Form>
+                    </Col>
+                </Row>
             </Container>
         </>
     );

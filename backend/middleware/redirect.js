@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export function middleware(request) {
+export function redirect(request) {
     const url = request.nextUrl;
     console.log("Middleware is running for:", url.pathname);
 
@@ -13,5 +13,5 @@ export function middleware(request) {
 }
 
 export const config = {
-    matcher: "/", // Ensures middleware runs only on "/"
+    matcher: "/", // Ensures redirect runs only on "/"
 };

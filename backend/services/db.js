@@ -17,20 +17,21 @@ export const connectToDB = async () => {
 };
 
 export const getMessages = async () => {
-  try {
-    return await Message.find().populate('author', 'username');
-  } catch (err) {
-    console.error('Error retrieving messages:', err);
-  }
+  return await Message.find().sort({ timestamp: 1 });
 };
 
-export const addMessage = async (msg, userId) => {
-  try {
-    const message = new Message({ content: msg, author: userId });
-    await message.save();
-  } catch (err) {
-    console.error('Error adding message:', err);
-  }
+export const getMessagesBetween = async (user1, user2) => {
+  return await Message.find({
+    $or: [
+      { from: user1, to: user2 },
+      { from: user2, to: user1 }
+    ]
+  }).sort({ timestamp: 1 });
+};
+
+export const addMessage = async (text, from, to) => {
+  const msg = new Message({ text, from, to });
+  return await msg.save();
 };
 
 export const isUserExist = async (username) => {

@@ -1,5 +1,7 @@
 import express from 'express';
-import { getMessages, addMessage, clearChat } from '../services/db.js';
+import { getMessages, addMessage, clearChat, getMessagesBetween } from '../services/db.js';
+import auth from "./auth.js";
+import {Message} from "../models/Message.js";
 
 const router = express.Router();
 
@@ -10,6 +12,36 @@ router.get('/', async (req, res) => {
         res.json(messages);
     } catch (err) {
         res.status(500).json({ message: 'Failed to fetch messages' });
+    }
+});
+
+// GET messages between two users
+router.get('/:user1/:user2', async (req, res) => {
+    const { user1, user2 } = req.params;
+    try {
+        const messages = await getMessagesBetween(user1, user2);
+        res.json(messages);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch messages between users' });
+    }
+});
+
+// ✅ GET /api/messages/:contactUsername
+router.get('/messages/:contactUsername', auth, async (req, res) => {
+    const current = req.user.username;
+    const contact = req.params.contactUsername;
+
+    try {
+        const messages = await Message.find({
+            $or: [
+                { from: current, to: contact },
+                { from: contact, to: current },
+            ],
+        }).sort({ timestamp: 1 });
+
+        res.json({ messages });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch messages' });
     }
 });
 
