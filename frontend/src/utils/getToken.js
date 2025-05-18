@@ -1,4 +1,7 @@
-export const getToken = () => {
-    const tokenCookie = document.cookie.split('; ').find(row => row.startsWith('token='));
-    return tokenCookie ? tokenCookie.split('=')[1] : '';
+import nookies from 'nookies';
+
+export const getToken = (ctx = null) => {
+    // ctx — це контекст Next.js (req/res) або null (браузер)
+    const cookies = nookies.get(ctx);
+    return cookies.token || '';
 };

@@ -3,7 +3,7 @@ import { Container, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import axios from 'axios';
+import api from '@/utils/axios';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
@@ -19,7 +19,7 @@ const Login = () => {
         setErrorMessage('');
         setLoading(true);
         try {
-            const response = await axios.post('/api/auth/login', { username, password }, { withCredentials: true });
+            const response = await api.post('/auth/login', { username, password }, { withCredentials: true });
             const { token } = response.data;
             document.cookie = `token=${token}; path=/; max-age=3600`;
             router.push('/chat');

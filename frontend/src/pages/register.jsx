@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import api from '@/utils/axios';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import Head from "next/head";
 
@@ -26,8 +26,8 @@ const Register = () => {
         }
 
         try {
-            const response = await axios.post(
-                '/api/auth/register',
+            const response = await api.post(
+                '/auth/register',
                 { username, password },
                 { withCredentials: true }
             );

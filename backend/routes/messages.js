@@ -15,17 +15,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET messages between two users
-router.get('/:user1/:user2', async (req, res) => {
-    const { user1, user2 } = req.params;
-    try {
-        const messages = await getMessagesBetween(user1, user2);
-        res.json(messages);
-    } catch (err) {
-        res.status(500).json({ message: 'Failed to fetch messages between users' });
-    }
-});
-
 // ✅ GET /api/messages/:contactUsername
 router.get('/:contactUsername', auth, async (req, res) => {
     const current = req.user.username;
@@ -47,18 +36,19 @@ router.get('/:contactUsername', auth, async (req, res) => {
 
 // POST a new message
 router.post('/', async (req, res) => {
-    const { content, userId } = req.body;
-    if (!content || !userId) {
-        return res.status(400).json({ message: 'Missing content or userId' });
+    const { from, to, text } = req.body;
+    if (!from || !to || !text) {
+        return res.status(400).json({ message: 'Missing from, to or text' });
     }
 
     try {
-        await addMessage(content, userId);
-        const messages = await getMessages(); // optionally return updated list
-        res.status(201).json(messages[messages.length - 1]); // return the last message
+        const newMessage = new Message({ from, to, text });
+        await newMessage.save();
+        res.status(201).json(newMessage);
     } catch (err) {
         res.status(500).json({ message: 'Failed to post message' });
     }
+
 });
 
 // DELETE all messages
@@ -70,5 +60,27 @@ router.delete('/', async (req, res) => {
         res.status(500).json({ message: 'Failed to delete messages' });
     }
 });
+
+// DELETE messages between current user and a contact
+router.delete('/:contactUsername', auth, async (req, res) => {
+    const current = req.user.username;
+    const contact = req.params.contactUsername;
+
+    try {
+        // Delete all messages where (from == current && to == contact) OR (from == contact && to == current)
+        await Message.deleteMany({
+            $or: [
+                { from: current, to: contact },
+                { from: contact, to: current },
+            ],
+        });
+
+        res.status(200).json({ message: 'Chat cleared successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to clear chat' });
+    }
+});
+
 
 export default router;
