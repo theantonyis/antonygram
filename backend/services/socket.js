@@ -34,16 +34,21 @@ export const initSocket = async (server, ioOptions) => {
                 text,
             });
 
+            const messageData = {
+                from: socket.username,
+                to,
+                text,
+                timestamp: newMessage.timestamp,
+            };
+
             // Emit message to recipient if online
             const targetSocket = onlineUsers.get(to);
             if (targetSocket) {
-                targetSocket.emit('message', {
-                    from: socket.username,
-                    to,
-                    text,
-                    timestamp: newMessage.timestamp,
-                });
+                targetSocket.emit('message', messageData);
             }
+
+            // Also emit to sender, so sender can update their UI
+            socket.emit('message', messageData);
         });
 
         socket.on('disconnect', () => {

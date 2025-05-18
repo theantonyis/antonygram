@@ -1,6 +1,6 @@
 import express from 'express';
 import { getMessages, addMessage, clearChat, getMessagesBetween } from '../services/db.js';
-import auth from "./auth.js";
+import auth from '../middleware/auth.js';
 import {Message} from "../models/Message.js";
 
 const router = express.Router();
@@ -27,7 +27,7 @@ router.get('/:user1/:user2', async (req, res) => {
 });
 
 // ✅ GET /api/messages/:contactUsername
-router.get('/messages/:contactUsername', auth, async (req, res) => {
+router.get('/:contactUsername', auth, async (req, res) => {
     const current = req.user.username;
     const contact = req.params.contactUsername;
 

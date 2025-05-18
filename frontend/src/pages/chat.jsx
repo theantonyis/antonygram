@@ -5,19 +5,37 @@ import { Container, Button, Form, ListGroup, Row, Col } from 'react-bootstrap';
 import Head from 'next/head';
 import { Trash2, LogOut, Send } from 'lucide-react';
 import axios from "axios";
+import { getToken } from '@/utils/getToken';
 
-const socket = io('http://localhost:5000'); // Backend WebSocket URL
 
 const Chat = () => {
+    const [socket, setSocket] = useState(null);
     const [messages, setMessages] = useState([]);
     const [user, setUser] = useState(null);
     const [input, setInput] = useState('');
     const [contactsList, setContactsList] = useState([]);
     const [selectedContact, setSelectedContact] = useState(null);
     const [chatHistory, setChatHistory] = useState({}); // { contactUsername: [...messages] }
+    const [search, setSearch] = useState('');
 
     const router = useRouter();
     const messagesEndRef = useRef(null);
+    const DEFAULT_AVATAR = '/def-avatar.png';
+
+    useEffect(() => {
+        const token = getToken();
+        if (!token) return;
+
+        const newSocket = io('http://localhost:5000', {
+            auth: { token },
+        });
+
+        setSocket(newSocket);
+
+        return () => {
+            newSocket.disconnect();
+        };
+    }, []);
 
     useEffect(() => {
         const tokenCookie = document.cookie.split('; ').find(row => row.startsWith('token='));
@@ -40,6 +58,29 @@ const Chat = () => {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    useEffect(() => {
+        if (!selectedContact) return;
+
+        if (chatHistory[selectedContact]) {
+            setMessages(chatHistory[selectedContact]);
+        } else {
+            const fetchMessages = async () => {
+                try {
+                    const res = await axios.get(`/api/messages/${selectedContact}`, {
+                        headers: { Authorization: `Bearer ${getToken()}` },
+                    });
+                    setChatHistory(prev => ({ ...prev, [selectedContact]: res.data.messages }));
+                    setMessages(res.data.messages);
+                } catch (err) {
+                    console.error('Failed to fetch messages', err);
+                    setMessages([]);
+                }
+            };
+            fetchMessages();
+        }
+    }, [selectedContact]);
+
 
     useEffect(() => {
         socket.on('message', ({ from, to, text }) => {
@@ -77,17 +118,12 @@ const Chat = () => {
         fetchContacts();
     }, []);
 
-    const getToken = () => {
-        const tokenCookie = document.cookie.split('; ').find(row => row.startsWith('token='));
-        return tokenCookie ? tokenCookie.split('=')[1] : '';
-    };
-
     const handleLogout = () => {
         document.cookie = 'token=; Max-Age=0; path=/';
         router.push('/login');
     };
 
-    const handleSend = (e) => {
+    const handleSend = async (e) => {
         e.preventDefault();
         if (!input.trim() || !selectedContact) return;
 
@@ -97,16 +133,31 @@ const Chat = () => {
             text: input.trim(),
         };
 
-        socket.emit('message', message);
+        try {
+            // Save message to DB via REST API
+            await axios.post('/api/messages', {
+                content: message.text,
+                userId: user.username, // or user id
+                to: selectedContact
+            }, {
+                headers: { Authorization: `Bearer ${getToken()}` }
+            });
 
-        setChatHistory(prev => ({
-            ...prev,
-            [selectedContact]: [...(prev[selectedContact] || []), message],
-        }));
+            // Emit the message through socket
+            socket.emit('message', message);
 
-        setMessages(prev => [...prev, message]);
-        setInput('');
+            // Update local state
+            setChatHistory(prev => ({
+                ...prev,
+                [selectedContact]: [...(prev[selectedContact] || []), message],
+            }));
+            setMessages(prev => [...prev, message]);
+            setInput('');
+        } catch (err) {
+            console.error('Failed to send message', err);
+        }
     };
+
 
     const handleClear = () => {
         if (selectedContact) {
@@ -115,22 +166,28 @@ const Chat = () => {
         }
     };
 
-    const selectContact = async (contact) => {
-        setSelectedContact(contact);
+    const handleAddContact = async (e) => {
+        e.preventDefault();
+        if (!search.trim()) return;
 
         try {
-            const res = await axios.get(`/api/messages/${contact}`, {
+            const res = await axios.post('/api/contacts/add', { username: search.trim() }, {
                 headers: {
                     Authorization: `Bearer ${getToken()}`,
-                },
+                }
             });
 
-            setChatHistory(prev => ({ ...prev, [contact]: res.data.messages }));
-            setMessages(res.data.messages);
+            setContactsList(res.data.contacts);
+            setSearch('');
         } catch (error) {
-            console.error('Failed to fetch messages', error);
-            setMessages([]);
+            console.error('Failed to add contact:', error.response?.data || error.message);
+            alert(error.response?.data?.error || 'Failed to add contact');
         }
+    };
+
+    const selectContact = (contact) => {
+        setMessages([]);
+        setSelectedContact(contact);
     };
 
 
@@ -144,15 +201,32 @@ const Chat = () => {
                 <Row>
                     <Col md={3} className="border-end">
                         <h4 className="mb-3">Contacts</h4>
+                        <Form className="mb-3" onSubmit={handleAddContact}>
+                            <Form.Control
+                                type="text"
+                                placeholder="Search or add user..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            <Button type="submit" className="mt-2 w-100" variant="success">
+                                Add Contact
+                            </Button>
+                        </Form>
+
                         <ListGroup>
-                            {contactsList.filter(c => c !== user?.username).map((contact, idx) => (
+                            {contactsList.filter(c => c.username !== user?.username).map((contact) => (
                                 <ListGroup.Item
-                                    key={idx}
+                                    key={contact.username}
                                     action
-                                    active={contact === selectedContact}
-                                    onClick={() => selectContact(contact)}
+                                    active={contact.username === selectedContact}
+                                    onClick={() => selectContact(contact.username)}
                                 >
-                                    {contact}
+                                    <img
+                                        src={contact.avatar || DEFAULT_AVATAR}
+                                        alt={`${contact.username} avatar`}
+                                        style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 8 }}
+                                    />
+                                    {contact.username}
                                 </ListGroup.Item>
                             ))}
                         </ListGroup>
