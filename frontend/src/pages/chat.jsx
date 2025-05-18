@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import io from 'socket.io-client';
-import { Container, Button, Form, ListGroup, Row, Col } from 'react-bootstrap';
+import { Container, Button, Form, ListGroup, Row, Col, Dropdown, Image } from 'react-bootstrap';
 import Head from 'next/head';
-import { Trash2, LogOut, Send } from 'lucide-react';
+import { Trash2, LogOut, Send, MoreVertical, UserRoundX } from 'lucide-react';
 import { getToken } from '@/utils/getToken';
 import api from '@/utils/axios';
 
@@ -31,10 +31,10 @@ const Chat = () => {
         setSocket(newSocket);
 
         return () => {
-            newSocket.disconnect(); // clean-up
+            newSocket.disconnect();
+            setSocket(null);
         };
     }, []);
-
 
     // Set user from token cookie and join socket room
     useEffect(() => {
@@ -47,10 +47,13 @@ const Chat = () => {
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
             const username = payload.username || 'Guest';
-            setUser({ username });
-            socket?.emit('join', username);
+            const avatar = payload.avatar || DEFAULT_AVATAR; // Assuming avatar URL is in token payload, else default
+            setUser({ username, avatar });
+            if (socket && user) {
+                socket.emit('join', user.username);
+            }
         } catch {
-            setUser({ username: 'Guest' });
+            setUser({ username: 'Guest', avatar: DEFAULT_AVATAR });
         }
     }, [router, socket]);
 
@@ -141,16 +144,40 @@ const Chat = () => {
         }
     };
 
-    const handleClear = async () => {
-        if (!selectedContact) return;
+    const handleClear = async (contact) => {
+        if (!contact) return;
 
         try {
-            await api.delete(`/messages/${selectedContact}`);
-            setChatHistory(prev => ({ ...prev, [selectedContact]: [] }));
-            setMessages([]);
+            await api.delete(`/messages/${contact}`);
+            setChatHistory(prev => ({ ...prev, [contact]: [] }));
+            if (contact === selectedContact) setMessages([]);
         } catch (err) {
             console.error('Failed to clear chat', err);
             alert('Failed to clear chat');
+        }
+    };
+
+    const handleDeleteContact = async (contact) => {
+        if (!contact) return;
+
+        try {
+            await api.delete(`/contacts/${contact}`);
+            setContactsList(prev => prev.filter(c => c.username !== contact));
+
+            // Clear chatHistory & messages if deleted contact is selected
+            setChatHistory(prev => {
+                const newHistory = { ...prev };
+                delete newHistory[contact];
+                return newHistory;
+            });
+
+            if (contact === selectedContact) {
+                setSelectedContact(null);
+                setMessages([]);
+            }
+        } catch (error) {
+            console.error('Failed to delete contact', error);
+            alert('Failed to delete contact');
         }
     };
 
@@ -183,6 +210,25 @@ const Chat = () => {
             </Head>
 
             <Container fluid className="p-4" style={{ minHeight: '100vh' }}>
+                <Row className="mb-4 align-items-center">
+                    <Col xs="auto" className="d-flex align-items-center">
+                        <Image
+                            src={user?.avatar || DEFAULT_AVATAR}
+                            alt="User Avatar"
+                            roundedCircle
+                            width={48}
+                            height={48}
+                            className="me-2"
+                        />
+                        <strong>{user?.username}</strong>
+                    </Col>
+                    <Col className="text-end">
+                        <Button variant="outline-warning" onClick={handleLogout}>
+                            <LogOut size={16} /> Logout
+                        </Button>
+                    </Col>
+                </Row>
+
                 <Row>
                     <Col md={3} className="border-end">
                         <h4 className="mb-3">Contacts</h4>
@@ -204,23 +250,68 @@ const Chat = () => {
                                 .map((contact) => (
                                     <ListGroup.Item
                                         key={contact.username}
-                                        action
-                                        active={contact.username === selectedContact}
+                                        className={`d-flex justify-content-between cursor-pointer align-items-center ${contact.username === selectedContact ? 'active' : ''}`}
                                         onClick={() => selectContact(contact.username)}
                                     >
-                                        <img
-                                            src={contact.avatar || DEFAULT_AVATAR}
-                                            alt={`${contact.username} avatar`}
-                                            style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 8 }}
-                                        />
-                                        {contact.username}
+                                        <div>
+                                            <img
+                                                src={contact.avatar || DEFAULT_AVATAR}
+                                                alt={`${contact.username} avatar`}
+                                                style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 8 }}
+                                            />
+                                            {contact.username}
+                                        </div>
+
+                                        <Dropdown
+                                            onClick={e => e.stopPropagation()} // Stop dropdown click from selecting contact
+                                            align="end"
+                                        >
+                                            <Dropdown.Toggle
+                                                variant={contact.username === selectedContact ? "primary" : "light"}
+                                                size="sm"
+                                                id={`dropdown-${contact.username}`}
+                                                className={`no-caret ${contact.username === selectedContact ? "active-toggle" : ""} p-0 
+                                                bg-transparent hover:bg-gray-200 transition-colors duration-200 rounded`}
+                                            >
+                                                <MoreVertical
+                                                    size={18}
+                                                    className={contact.username === selectedContact ? 'text-white' : 'text-gray-600'}
+                                                />
+                                            </Dropdown.Toggle>
+
+
+                                            <Dropdown.Menu
+                                                className={`rounded shadow-lg border-none p-1 ${
+                                                    contact.username === selectedContact
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-white text-gray-800'
+                                                }`}
+                                            >
+                                                <Dropdown.Item onClick={() => handleClear(contact.username)}>
+                                                <div className="d-flex align-items-center">
+                                                        <Trash2 size={16} className="me-2" />
+                                                        <span>Clear Chat</span>
+                                                    </div>
+                                                </Dropdown.Item>
+
+                                                <Dropdown.Item
+                                                    onClick={() => {
+                                                        if (confirm(`Delete contact "${contact.username}"? This will also clear chat history.`)) {
+                                                            handleDeleteContact(contact.username);
+                                                        }
+                                                    }}
+                                                    className="text-danger d-flex align-items-center"
+                                                >
+                                                    <div className="d-flex align-items-center">
+                                                        <UserRoundX size={16} className="me-2" />
+                                                        <span>Delete Contact</span>
+                                                    </div>
+                                                </Dropdown.Item>
+                                            </Dropdown.Menu>
+                                        </Dropdown>
                                     </ListGroup.Item>
                                 ))}
                         </ListGroup>
-
-                        <Button variant="outline-warning" onClick={handleLogout} className="mt-4 w-100">
-                            <LogOut size={16} /> Logout
-                        </Button>
                     </Col>
 
                     <Col md={9}>
@@ -237,46 +328,36 @@ const Chat = () => {
                                                 key={i}
                                                 className={`d-flex justify-content-${msg.from === user.username ? 'end' : 'start'}`}
                                             >
-              <span
-                  className={`px-3 py-2 rounded ${
-                      msg.from === user.username ? 'bg-primary text-white' : 'bg-light text-dark'
-                  }`}
-              >
-                {msg.text}
-              </span>
+                                                <div
+                                                    style={{
+                                                        backgroundColor: msg.from === user.username ? '#cfe9ff' : '#eee',
+                                                        borderRadius: 12,
+                                                        padding: '8px 12px',
+                                                        maxWidth: '70%',
+                                                    }}
+                                                >
+                                                    {msg.text}
+                                                </div>
                                             </ListGroup.Item>
                                         ))
                                     )}
                                     <div ref={messagesEndRef} />
                                 </ListGroup>
 
-                                <Form onSubmit={handleSend}>
-                                    <Row>
-                                        <Col xs={9}>
-                                            <Form.Control
-                                                type="text"
-                                                placeholder="Type a message..."
-                                                value={input}
-                                                onChange={(e) => setInput(e.target.value)}
-                                            />
-                                        </Col>
-                                        <Col xs={3}>
-                                            <Button type="submit" variant="primary" className="w-100" disabled={!input.trim()}>
-                                                Send <Send size={16} />
-                                            </Button>
-                                        </Col>
-                                    </Row>
-                                    <div className="mt-2 text-end">
-                                        <Button variant="outline-danger" size="sm" onClick={handleClear}>
-                                            <Trash2 size={16} /> Clear Chat
-                                        </Button>
-                                    </div>
+                                <Form onSubmit={handleSend} className="d-flex">
+                                    <Form.Control
+                                        placeholder="Type a message..."
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
+                                        autoComplete="off"
+                                    />
+                                    <Button type="submit" variant="primary" className="ms-2">
+                                        <Send size={20} />
+                                    </Button>
                                 </Form>
                             </>
                         ) : (
-                            <div className="text-center text-muted mt-5">
-                                <h5>Select a contact to start chatting</h5>
-                            </div>
+                            <div className="text-center text-muted mt-5">Select a contact to start chatting</div>
                         )}
                     </Col>
                 </Row>

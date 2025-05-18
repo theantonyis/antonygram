@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Router from 'next/router';
 import { getToken } from './getToken';
+import nookies from "nookies";
 
 const api = axios.create({
     baseURL: '/api',

@@ -203,4 +203,8 @@ li {
     z-index: -1;
 }
 
+.no-caret::after {
+    display: none !important;
+}
+
 
