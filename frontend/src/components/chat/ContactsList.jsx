@@ -1,7 +1,8 @@
 import React from 'react';
 import { ListGroup, Form, Button, Dropdown } from 'react-bootstrap';
-import { UserMinus, Plus, MoreVertical, Trash2, X } from 'lucide-react';
+import { UserMinus, Plus, MoreVertical, Trash2 } from 'lucide-react';
 import Avatar from '../common/Avatar';
+import dayjs from 'dayjs';
 
 const ContactsList = ({
     user,
@@ -41,11 +42,12 @@ const ContactsList = ({
 
                     return (
                         <ListGroup.Item
+                            as="div"
                             key={contact.username}
                             action
                             active={isSelected}
                             onClick={() => onSelectContact(contact)}
-                            className="d-flex justify-content-between align-items-center"
+                            className="d-flex justify-content-between align-items-center cursor-pointer"
                         >
                             <div className="d-flex align-items-center">
                                 <Avatar avatar={contact.avatar} size={32} />
@@ -62,15 +64,16 @@ const ContactsList = ({
                                     >
                                         {isOnline
                                             ? 'Online'
-                                            : `Last seen ${new Date(contact.lastSeen).toLocaleString()}`}
+                                            : `Last seen ${dayjs(contact.lastSeen).format('DD/MM/YYYY HH:mm')}`}
                                     </small>
                                 </div>
                             </div>
-                            <Dropdown align="end">
+
+                            <Dropdown align="end" onClick={(e) => e.stopPropagation()}>
                                 <Dropdown.Toggle
                                     variant="link"
                                     bsPrefix="p-0 border-0 custom-dropdown-toggle"
-                                    id="dropdown-basic"
+                                    id={`dropdown-${contact.username}`}
                                     style={{
                                         color: isSelected && !isOnline ? 'text-white' : 'inherit',
                                     }}

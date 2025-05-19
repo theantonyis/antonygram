@@ -2,7 +2,7 @@
 import { Col, Row } from "react-bootstrap";
 import ContactsList from "@components/chat/ContactsList";
 
-const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, children}) => {
+const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, onlineUsers, addContactInput, setAddContactInput, onAddContact, onClearChat, onDeleteContact, children}) => {
     return (
         <Row className="mt-3" style={{ minHeight: "70vh" }}>
             <Col md={3}>
@@ -10,7 +10,13 @@ const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, child
                     user={user}
                     contacts={contactsList}
                     selectedContact={selectedContact}
+                    onlineUsers={onlineUsers}
+                    addContactInput={addContactInput}
+                    setAddContactInput={setAddContactInput}
+                    onAddContact={onAddContact}
                     onSelectContact={onSelectContact}
+                    onClearChat={onClearChat}
+                    onDeleteContact={onDeleteContact}
                 />
             </Col>
             <Col

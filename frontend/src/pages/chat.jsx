@@ -134,12 +134,18 @@ const Chat = () => {
           </Col>
         </Row>
 
-        <ChatLayout
-          user={user}
-          contactsList={contactsList}
-          selectedContact={selectedContact}
-          onSelectContact={onSelectContact}
-        >
+          <ChatLayout
+              user={user}
+              contactsList={contactsList}
+              selectedContact={selectedContact}
+              onSelectContact={onSelectContact}
+              onlineUsers={onlineUsers}
+              addContactInput={addContactInput}
+              setAddContactInput={setAddContactInput}
+              onAddContact={onAddContact}
+              onClearChat={onClearChat}
+              onDeleteContact={onDeleteContact}
+          >
           {selectedContact ? (
             <>
               <ChatHeader

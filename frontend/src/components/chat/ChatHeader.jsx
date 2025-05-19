@@ -1,19 +1,22 @@
 import React from 'react';
 import { Row, Col } from 'react-bootstrap';
 import Avatar from '../common/Avatar';
+import dayjs from 'dayjs';
 
 const ChatHeader = ({ contact }) => {
     if (!contact) return null;
 
     return (
         <Row className="align-items-center border-bottom pb-2 mb-2">
-            <Col xs="auto" className="ms-3 mt-2"> {/* Added ms-3 for left margin */}
+            <Col xs="auto" className="ms-3 mt-2">
                 <Avatar avatar={contact.avatar} size={40} />
             </Col>
             <Col>
                 <h5 className="mb-0 mt-1">{contact.username}</h5>
                 <small className="text-muted">
-                    {contact.isOnline ? 'Online' : `Last seen ${new Date(contact.lastSeen).toLocaleString()}`}
+                    {contact.isOnline
+                        ? 'Online'
+                        : `Last seen ${dayjs(contact.lastSeen).format('DD/MM/YYYY HH:mm')}`}
                 </small>
             </Col>
         </Row>

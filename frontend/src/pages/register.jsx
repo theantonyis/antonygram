@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
 import { useRouter } from 'next/router';
-import api from '@/utils/axios';
+import api from '@utils/axios';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import Head from "next/head";
 

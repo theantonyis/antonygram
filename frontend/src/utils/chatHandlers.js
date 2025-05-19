@@ -119,7 +119,14 @@ export const handleAddContact = async ({ e, search, setContactsList, setSelected
     try {
         const res = await api.post('/contacts/add', { username: search.trim() });
         setContactsList(res.data.contacts);
-        setSelectedContact(search.trim()); // Could be setSelectedContact({ username: search.trim() }) if objects preferred
+
+        // Find the newly added contact as object and set it
+        const newContact =
+            Array.isArray(res.data.contacts)
+                ? res.data.contacts.find((c) => c.username === search.trim())
+                : { username: search.trim() };
+
+        setSelectedContact(newContact); // ← Always set as object!
         setSearch('');
     } catch (error) {
         console.error('Failed to add contact:', error.response?.data || error.message);

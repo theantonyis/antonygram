@@ -50,7 +50,22 @@ router.post('/add', auth, async (req, res) => {
         user.contacts.push(username);
         await user.save();
 
-        res.json({ success: true, message: 'Contact added', contacts: user.contacts });
+        // Fetch full info of all contacts, similar to GET /api/contacts
+        const contacts = await User.find({ username: { $in: user.contacts } })
+            .select('username avatar lastSeen');
+
+        const enrichedContacts = contacts.map(contact => ({
+            username: contact.username,
+            avatar: contact.avatar,
+            lastSeen: contact.lastSeen,
+            online: onlineUsers.has(contact.username)
+        }));
+
+        res.json({ 
+            success: true, 
+            message: 'Contact added', 
+            contacts: enrichedContacts
+        });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
@@ -106,7 +121,16 @@ router.delete('/:username', auth, async (req, res) => {
         user.contacts = user.contacts.filter(username => username !== contactUsername);
         await user.save();
 
-        res.json({ success: true, message: 'Contact removed', contacts: user.contacts });
+        // Fetch full contact data for the remaining contacts
+        const contacts = await User.find({ username: { $in: user.contacts } })
+            .select('username avatar lastSeen');
+        const enrichedContacts = contacts.map(contact => ({
+            username: contact.username,
+            avatar: contact.avatar,
+            lastSeen: contact.lastSeen,
+            online: onlineUsers.has(contact.username)
+        }));
+        res.json({ success: true, message: 'Contact removed', contacts: enrichedContacts });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
