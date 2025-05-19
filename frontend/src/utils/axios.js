@@ -4,7 +4,7 @@ import { getToken } from './getToken';
 import { deleteCookie } from 'cookies-next';
 
 const api = axios.create({
-    baseURL: '/api',
+    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL + '/api',
 });
 
 api.interceptors.request.use((config) => {
