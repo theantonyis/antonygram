@@ -9,7 +9,7 @@ const DeleteContactModal = ({ show, contact, onHide, onConfirm }) => {
                 <Modal.Title>Confirm Delete</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                Are you sure you want to delete contact <strong>{contact}</strong>? This will also clear the chat history.
+                Are you sure you want to delete contact <strong>{contact ? contact.username : ''}</strong>? This will also clear the chat history.
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide}>Cancel</Button>

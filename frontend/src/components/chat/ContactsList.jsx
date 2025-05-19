@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ListGroup, Form, Button, Dropdown } from 'react-bootstrap';
 import { UserMinus, Plus, MoreVertical, Trash2 } from 'lucide-react';
 import Avatar from '../common/Avatar';
@@ -16,6 +16,9 @@ const ContactsList = ({
     onClearChat,
     onDeleteContact
 }) => {
+    // Track which dropdown is open (null means none are open)
+    const [openDropdown, setOpenDropdown] = useState(null);
+
     return (
         <div>
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -69,7 +72,15 @@ const ContactsList = ({
                                 </div>
                             </div>
 
-                            <Dropdown align="end" onClick={(e) => e.stopPropagation()}>
+                            <Dropdown
+                                align="end"
+                                show={openDropdown === contact.username} // Control open state here
+                                onToggle={(isOpen, e, meta) => {
+                                    // meta.source === 'select' is used by react-bootstrap for toggling
+                                    setOpenDropdown(isOpen ? contact.username : null);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
                                 <Dropdown.Toggle
                                     variant="link"
                                     bsPrefix="p-0 border-0 custom-dropdown-toggle"
@@ -86,6 +97,7 @@ const ContactsList = ({
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onClearChat(contact);
+                                            setOpenDropdown(null); // Close dropdown
                                         }}
                                     >
                                         <Trash2 size={16} className="me-2" style={{ color: 'red' }} />
@@ -95,6 +107,7 @@ const ContactsList = ({
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onDeleteContact(contact);
+                                            setOpenDropdown(null); // Close dropdown
                                         }}
                                     >
                                         <UserMinus size={16} className="me-2" style={{ color: 'red' }} />
