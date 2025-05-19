@@ -2,6 +2,7 @@ import express from 'express';
 const router = express.Router();
 import { User } from '../models/User.js';
 import auth from '../middleware/auth.js';
+import { onlineUsers } from '../services/socket.js';
 
 // ✅ GET /api/contacts
 router.get('/', auth, async (req, res) => {
@@ -11,14 +12,23 @@ router.get('/', auth, async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         // Підвантажуємо інформацію по контактах
-        const contacts = await User.find({ username: { $in: user.contacts } }).select('username avatar');
+        const contacts = await User.find({ username: { $in: user.contacts } })
+            .select('username avatar lastSeen');
 
-        res.json({ contacts });
+        // Додаємо поле "online" із onlineUsers Map
+        const enrichedContacts = contacts.map(contact => ({
+            username: contact.username,
+            avatar: contact.avatar,
+            lastSeen: contact.lastSeen,
+            online: onlineUsers.has(contact.username)
+        }));
+
+        res.json({ contacts: enrichedContacts });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
 });
-
 
 // Add contact by username
 router.post('/add', auth, async (req, res) => {

@@ -18,6 +18,7 @@ const Chat = () => {
     const [selectedContact, setSelectedContact] = useState(null);
     const [chatHistory, setChatHistory] = useState({}); // { contactUsername: [...messages] }
     const [search, setSearch] = useState('');
+    const [onlineUsers, setOnlineUsers] = useState([]);
 
     const router = useRouter();
     const messagesEndRef = useRef(null);
@@ -79,6 +80,25 @@ const Chat = () => {
     useEffect(() => {
         if (socket && user?.username) {
             socket.emit('join', user.username);
+
+            socket.on('onlineUsers', (usernames) => {
+                setOnlineUsers(usernames);
+            });
+
+            socket.on('userConnected', (username) => {
+                setOnlineUsers(prev => [...new Set([...prev, username])]);
+            });
+
+            socket.on('userDisconnected', (username) => {
+                setOnlineUsers(prev => prev.filter(u => u !== username));
+            });
+
+            return () => {
+                socket.off('onlineUsers');
+                socket.off('userConnected');
+                socket.off('userDisconnected');
+            };
+
         }
     }, [socket, user]);
 
@@ -142,8 +162,14 @@ const Chat = () => {
                 console.error('Failed to fetch contacts', error);
             }
         };
+        setContactsList(prev =>
+            prev.map(c => ({
+                ...c,
+                online: onlineUsers.includes(c.username),
+            }))
+        );
         fetchContacts();
-    }, []);
+    }, [onlineUsers]);
 
     const handleLogout = useCallback(() => {
         document.cookie = 'token=; Max-Age=0; path=/';
@@ -284,13 +310,22 @@ const Chat = () => {
                                         className={`d-flex justify-content-between cursor-pointer align-items-center ${contact.username === selectedContact ? 'active' : ''}`}
                                         onClick={() => selectContact(contact.username)}
                                     >
-                                        <div>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
                                             <img
                                                 src={contact.avatar || DEFAULT_AVATAR}
                                                 alt={`${contact.username} avatar`}
                                                 style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 8 }}
                                             />
-                                            {contact.username}
+                                            <div>
+                                                <div>{contact.username}</div>
+                                                <small className={contact.username === selectedContact ? 'text-white' : 'text-muted'}>
+                                                    {contact.online ? (
+                                                        <span className="text-success">● Online</span>
+                                                    ) : (
+                                                        <span>Last seen: {new Date(contact.lastSeen).toLocaleString()}</span>
+                                                    )}
+                                                </small>
+                                            </div>
                                         </div>
 
                                         <Dropdown

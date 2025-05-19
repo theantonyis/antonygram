@@ -4,7 +4,7 @@ import {Message} from '../models/Message.js';
 import { Server } from'socket.io';
 import {User} from "../models/User.js";
 
-const onlineUsers = new Map();
+export const onlineUsers = new Map();
 
 export const initSocket = async (server, ioOptions) => {
     const io = new Server(server, ioOptions);
@@ -26,6 +26,9 @@ export const initSocket = async (server, ioOptions) => {
         console.log(`✅ ${socket.username} connected`);
 
         onlineUsers.set(socket.username, socket);
+
+        const onlineUsernames = Array.from(onlineUsers.keys());
+        io.emit('online_users', onlineUsernames);
 
         socket.on('joinRoom', ({ withUser }) => {
             const roomName = [socket.username, withUser].sort().join('_');
