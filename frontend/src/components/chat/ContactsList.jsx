@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ListGroup, Form, Button, Dropdown } from 'react-bootstrap';
 import { UserMinus, Plus, MoreVertical, Trash2 } from 'lucide-react';
 import Avatar from '../common/Avatar';
@@ -16,8 +16,17 @@ const ContactsList = ({
     onClearChat,
     onDeleteContact
 }) => {
-    // Track which dropdown is open (null means none are open)
     const [openDropdown, setOpenDropdown] = useState(null);
+    const [showPreview, setShowPreview] = useState(true); // control preview visibility
+    const inputGroupRef = useRef(null);
+
+    // Filter contacts for search preview (case-insensitive)
+    const previewResults = addContactInput && showPreview
+        ? contacts.filter(
+            contact =>
+                contact.username.toLowerCase().includes(addContactInput.toLowerCase())
+        )
+        : [];
 
     return (
         <div>
@@ -25,17 +34,58 @@ const ContactsList = ({
                 <h4>Welcome, {user?.username || 'Guest'}!</h4>
             </div>
 
-            <div className="mb-3 d-flex">
-                <Form.Control
-                    type="text"
-                    placeholder="Add new contact..."
-                    value={addContactInput}
-                    onChange={(e) => setAddContactInput(e.target.value)}
-                    className="me-2"
-                />
-                <Button variant="primary" onClick={onAddContact}>
-                    <Plus size={20} />
-                </Button>
+            <div className="mb-3 d-flex flex-column" ref={inputGroupRef} style={{ position: 'relative' }}>
+                <div className="d-flex mb-1">
+                    <Form.Control
+                        type="text"
+                        placeholder="Add new contact..."
+                        value={addContactInput}
+                        onChange={(e) => {
+                            setAddContactInput(e.target.value);
+                            setShowPreview(true); // Show preview when typing
+                        }}
+                        className="me-2"
+                        autoComplete="off"
+                    />
+                    <Button variant="primary" onClick={onAddContact}>
+                        <Plus size={20} />
+                    </Button>
+                </div>
+                {/* Search preview */}
+                {addContactInput && showPreview && (
+                    <ListGroup
+                        style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            zIndex: 1050,
+                            boxShadow: '0 2px 8px rgba(0,0,0,.2)'
+                        }}
+                    >
+                        {previewResults.length > 0 ? (
+                            previewResults.map(contact => (
+                                <ListGroup.Item
+                                    key={contact.username}
+                                    action
+                                    onClick={() => {
+                                        setAddContactInput(contact.username);
+                                        setShowPreview(false); // Hide preview after selecting
+                                    }}
+                                    className="d-flex align-items-center"
+                                    style={{ cursor: 'pointer', background: 'white' }}
+                                >
+                                    <Avatar avatar={contact.avatar} size={24} />
+                                    <span className="ms-2">{contact.username}</span>
+                                </ListGroup.Item>
+                            ))
+                        ) : (
+                            <ListGroup.Item disabled>
+                                No matching contacts found
+                            </ListGroup.Item>
+                        )}
+                    </ListGroup>
+                )}
             </div>
 
             <ListGroup>
@@ -74,9 +124,8 @@ const ContactsList = ({
 
                             <Dropdown
                                 align="end"
-                                show={openDropdown === contact.username} // Control open state here
-                                onToggle={(isOpen, e, meta) => {
-                                    // meta.source === 'select' is used by react-bootstrap for toggling
+                                show={openDropdown === contact.username}
+                                onToggle={(isOpen) => {
                                     setOpenDropdown(isOpen ? contact.username : null);
                                 }}
                                 onClick={(e) => e.stopPropagation()}
@@ -97,7 +146,7 @@ const ContactsList = ({
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onClearChat(contact);
-                                            setOpenDropdown(null); // Close dropdown
+                                            setOpenDropdown(null);
                                         }}
                                     >
                                         <Trash2 size={16} className="me-2" style={{ color: 'red' }} />
@@ -107,7 +156,7 @@ const ContactsList = ({
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onDeleteContact(contact);
-                                            setOpenDropdown(null); // Close dropdown
+                                            setOpenDropdown(null);
                                         }}
                                     >
                                         <UserMinus size={16} className="me-2" style={{ color: 'red' }} />
