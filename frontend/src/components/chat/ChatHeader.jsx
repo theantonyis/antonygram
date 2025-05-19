@@ -8,11 +8,11 @@ const ChatHeader = ({ contact }) => {
 
     return (
         <Row className="align-items-center border-bottom pb-2 mb-2">
-            <Col xs="auto" className="ms-3 mt-2">
+            <Col xs="auto">
                 <Avatar avatar={contact.avatar} size={40} />
             </Col>
             <Col>
-                <h5 className="mb-0 mt-1">{contact.username}</h5>
+                <h5 className="mb-0">{contact.username}</h5>
                 <small className="text-muted">
                     {contact.isOnline
                         ? 'Online'

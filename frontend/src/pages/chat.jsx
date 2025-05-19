@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Button, Row, Col, Image } from 'react-bootstrap';
 import Head from 'next/head';
-import { LogOut } from 'lucide-react';
+import { LogOut, Users } from 'lucide-react';
 import useSocket from '../hooks/useSocket';
 import useAuthUser from '../hooks/useAuthUser';
 import useOnlineUsers from '../hooks/useOnlineUsers';
@@ -40,6 +40,7 @@ const Chat = () => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
+  const [showContacts, setShowContacts] = useState(false);
 
   useOnlineUsers(socket, user, setOnlineUsers);
   useContacts(onlineUsers, setContactsList);
@@ -115,7 +116,7 @@ const Chat = () => {
         <title>Chat | antonygram</title>
       </Head>
       <Container fluid className="p-4" style={{ minHeight: '100vh' }}>
-        <Row className="mb-4 align-items-center">
+        <Row className="mb-4 align-items-center d-none d-md-flex">
           <Col xs="auto" className="d-flex align-items-center">
             <Image
               src={user?.avatar || DEFAULT_AVATAR}
@@ -145,15 +146,44 @@ const Chat = () => {
               onAddContact={onAddContact}
               onClearChat={onClearChat}
               onDeleteContact={onDeleteContact}
+              showContacts={showContacts}
+              setShowContacts={setShowContacts}
           >
+            <div className="d-flex align-items-center justify-content-between py-2 px-3 d-flex d-md-none" style={{ marginTop: 8 }}>
+              <div className="d-flex align-items-center gap-2">
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  className="me-2"
+                  style={{ minWidth: 32 }}
+                  onClick={() => setShowContacts(true)}
+                  aria-label="Show contacts"
+                >
+                  <Users size={20} />
+                </Button>
+                <Image
+                  src={user?.avatar || DEFAULT_AVATAR}
+                  alt="User Avatar"
+                  roundedCircle
+                  width={32}
+                  height={32}
+                />
+                <span className="fw-bold">{user?.username}</span>
+              </div>
+              <Button variant="outline-danger" size="sm" onClick={onLogout}>
+                <LogOut size={16} />
+              </Button>
+            </div>
           {selectedContact ? (
             <>
+            <div className="px-3 pt-3 pb-0">
               <ChatHeader
                 contact={{
                   ...selectedContact,
                   isOnline: onlineUsers.includes(selectedContact.username),
                 }}
               />
+            </div>
               <div className="flex-grow-1 overflow-auto d-flex flex-column justify-content-end px-0">
                 <MessageList
                     messages={chatHistory[selectedContact.username] || []}
