@@ -2,6 +2,8 @@
 
 import api from '@utils/axios';
 
+const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 /**
  * Handles user logout.
  * @param {object} router - Next.js router for navigation.
@@ -50,7 +52,7 @@ export const handleClear = async ({ contact, selectedContact, setChatHistory, se
     if (!contact) return;
 
     try {
-        await api.delete(`/messages/${typeof contact === 'string' ? contact : contact.username}`);
+        await api.delete(`${backendURL}/api/messages/${typeof contact === 'string' ? contact : contact.username}`);
         setChatHistory(prev => ({ ...prev, [contact.username || contact]: [] }));
 
         if ((contact.username || contact) === (selectedContact?.username || selectedContact)) {
@@ -84,7 +86,7 @@ export const handleDeleteContact = async ({
 
     const username = contact.username || contact;
     try {
-        await api.delete(`/contacts/${username}`);
+        await api.delete(`${backendURL}/api/contacts/${username}`);
         setContactsList(prev => prev.filter(c => c.username !== username));
 
         setChatHistory(prev => {
@@ -117,7 +119,7 @@ export const handleAddContact = async ({ e, search, setContactsList, setSelected
     if (!search.trim()) return;
 
     try {
-        const res = await api.post('/contacts/add', { username: search.trim() });
+        const res = await api.post(`${backendURL}/api/contacts/add`, { username: search.trim() });
         setContactsList(res.data.contacts);
 
         // Find the newly added contact as object and set it

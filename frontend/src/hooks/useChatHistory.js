@@ -1,6 +1,8 @@
 import {useEffect} from "react";
 import api from "@utils/axios";
 
+const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 export default function useChatHistory(selectedContact, chatHistory, setMessages, setChatHistory) {
     useEffect(() => {
         if (!selectedContact) return;
@@ -17,7 +19,7 @@ export default function useChatHistory(selectedContact, chatHistory, setMessages
 
         const fetchMessages = async () => {
             try {
-                const res = await api.get(`/messages/${username}`);
+                const res = await api.get(`${backendURL}/api/messages/${username}`);
                 console.log('Fetched messages:', res.data.messages);
 
                 // Don't try to get avatars for now (avoid ContactsList problem)
