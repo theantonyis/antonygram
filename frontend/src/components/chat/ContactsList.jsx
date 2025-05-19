@@ -69,7 +69,7 @@ const ContactsList = ({
 
             <div className="mb-3 d-flex flex-column">
                 {/* --- Input + Search Preview container --- */}
-                <div className="position-relative mb-2">
+                <div className="position-relative mb-2" ref={inputGroupRef}>
                     <div className="d-flex">
                         <Form.Control
                             type="text"
@@ -78,6 +78,13 @@ const ContactsList = ({
                             onChange={(e) => {
                                 setAddContactInput(e.target.value);
                                 setShowPreview(true);
+                            }}
+                            onFocus={() => setShowPreview(true)}
+                            onBlur={() => setTimeout(() => setShowPreview(false), 100)}
+                            onClick={() => {
+                                if (inputGroupRef.current) {
+                                    inputGroupRef.current.querySelector('input').focus();
+                                }
                             }}
                             className="me-2"
                             autoComplete="off"
