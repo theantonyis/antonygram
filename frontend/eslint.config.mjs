@@ -11,4 +11,17 @@ const compat = new FlatCompat({
 
 const eslintConfig = [...compat.extends("next/core-web-vitals")];
 
+eslintConfig.push({
+  settings: {
+    "import/resolver": {
+      "alias": {
+        "map": [
+          ["@", "./"]
+        ],
+        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+      }
+    }
+  }
+});
+
 export default eslintConfig;
