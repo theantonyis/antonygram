@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import io from 'socket.io-client';
-import { Container, Button, Form, ListGroup, Row, Col, Dropdown, Image } from 'react-bootstrap';
+import { Container, Button, Form, ListGroup, Row, Col, Dropdown, Image, Modal } from 'react-bootstrap';
 import Head from 'next/head';
 import { Trash2, LogOut, Send, MoreVertical, UserRoundX } from 'lucide-react';
 import { getToken } from '@/utils/getToken';
@@ -21,6 +21,27 @@ const Chat = () => {
 
     const router = useRouter();
     const messagesEndRef = useRef(null);
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [contactToDelete, setContactToDelete] = useState(null);
+
+    const openDeleteModal = (contact) => {
+        setContactToDelete(contact);
+        setShowDeleteModal(true);
+    };
+
+    const closeDeleteModal = () => {
+        setContactToDelete(null);
+        setShowDeleteModal(false);
+    };
+
+    const confirmDeleteContact = () => {
+        if (contactToDelete) {
+            handleDeleteContact(contactToDelete);
+            closeDeleteModal();
+        }
+    };
+
 
     // Initialize socket connection once
     useEffect(() => {
@@ -43,19 +64,24 @@ const Chat = () => {
             router.push('/login');
             return;
         }
+
         const token = tokenCookie.split('=')[1];
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
             const username = payload.username || 'Guest';
-            const avatar = payload.avatar || DEFAULT_AVATAR; // Assuming avatar URL is in token payload, else default
+            const avatar = payload.avatar || DEFAULT_AVATAR;
             setUser({ username, avatar });
-            if (socket && user) {
-                socket.emit('join', user.username);
-            }
         } catch {
             setUser({ username: 'Guest', avatar: DEFAULT_AVATAR });
         }
-    }, [router, socket]);
+    }, [router]);
+
+    useEffect(() => {
+        if (socket && user?.username) {
+            socket.emit('join', user.username);
+        }
+    }, [socket, user]);
+
 
     // Scroll to latest message
     useEffect(() => {
@@ -135,7 +161,7 @@ const Chat = () => {
         };
 
         try {
-            await api.post('/messages', message);
+            // Only emit via socket; the backend should handle saving to DB
             socket.emit('message', message);
 
             setInput('');
@@ -191,6 +217,7 @@ const Chat = () => {
                 { username: search.trim() }
             );
             setContactsList(res.data.contacts);
+            setSelectedContact(search.trim()); // Automatically select new contact
             setSearch('');
         } catch (error) {
             console.error('Failed to add contact:', error.response?.data || error.message);
@@ -201,6 +228,10 @@ const Chat = () => {
     const selectContact = (contact) => {
         setSelectedContact(contact);
         setMessages(chatHistory[contact] || []);
+
+        if (socket && user?.username) {
+            socket.emit('joinRoom', { withUser: contact });
+        }
     };
 
     return (
@@ -281,11 +312,7 @@ const Chat = () => {
 
 
                                             <Dropdown.Menu
-                                                className={`rounded shadow-lg border-none p-1 ${
-                                                    contact.username === selectedContact
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-white text-gray-800'
-                                                }`}
+                                                className={`rounded shadow-lg border-none p-1`}
                                             >
                                                 <Dropdown.Item onClick={() => handleClear(contact.username)}>
                                                 <div className="d-flex align-items-center">
@@ -295,14 +322,13 @@ const Chat = () => {
                                                 </Dropdown.Item>
 
                                                 <Dropdown.Item
-                                                    onClick={() => {
-                                                        if (confirm(`Delete contact "${contact.username}"? This will also clear chat history.`)) {
-                                                            handleDeleteContact(contact.username);
-                                                        }
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        openDeleteModal(contact.username);
                                                     }}
                                                     className="text-danger d-flex align-items-center"
                                                 >
-                                                    <div className="d-flex align-items-center">
+                                                <div className="d-flex align-items-center">
                                                         <UserRoundX size={16} className="me-2" />
                                                         <span>Delete Contact</span>
                                                     </div>
@@ -362,6 +388,23 @@ const Chat = () => {
                     </Col>
                 </Row>
             </Container>
+
+            <Modal show={showDeleteModal} onHide={closeDeleteModal} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Delete Contact</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    Are you sure you want to delete contact <strong>{contactToDelete}</strong>? This will also clear the chat history.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={closeDeleteModal}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={confirmDeleteContact}>
+                        Delete
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </>
     );
 };

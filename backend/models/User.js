@@ -6,7 +6,11 @@
         password: { type: String, required: true },
         salt: { type: String, required: true },
         contacts: [{ type: String }],
-        avatar: String
+        avatar: String,
+        lastSeen: {
+            type: Date,
+            default: Date.now,
+        }
     });
 
     // Check if the model is already compiled to avoid overwriting

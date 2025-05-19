@@ -78,7 +78,30 @@ router.get('/search', auth, async (req, res) => {
     }
 });
 
+// DELETE /api/contacts/:username
+router.delete('/:username', auth, async (req, res) => {
+    const contactUsername = req.params.username;
 
+    if (contactUsername === req.user.username)
+        return res.status(400).json({ error: "You can't remove yourself." });
+
+    try {
+        const user = await User.findOne({ username: req.user.username });
+
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (!user.contacts.includes(contactUsername))
+            return res.status(404).json({ error: 'Contact not found' });
+
+        user.contacts = user.contacts.filter(username => username !== contactUsername);
+        await user.save();
+
+        res.json({ success: true, message: 'Contact removed', contacts: user.contacts });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 
 export default router;

@@ -2,6 +2,7 @@
 import jwt from 'jsonwebtoken';
 import {Message} from '../models/Message.js';
 import { Server } from'socket.io';
+import {User} from "../models/User.js";
 
 const onlineUsers = new Map();
 
@@ -23,7 +24,14 @@ export const initSocket = async (server, ioOptions) => {
 
     io.on('connection', (socket) => {
         console.log(`✅ ${socket.username} connected`);
+
         onlineUsers.set(socket.username, socket);
+
+        socket.on('joinRoom', ({ withUser }) => {
+            const roomName = [socket.username, withUser].sort().join('_');
+            socket.join(roomName);
+            console.log(`${socket.username} joined room ${roomName}`);
+        });
 
         socket.on('message', async ({ to, text }) => {
             if (!to || !text) return;
@@ -41,19 +49,25 @@ export const initSocket = async (server, ioOptions) => {
                 timestamp: newMessage.timestamp,
             };
 
-            // Emit message to recipient if online
-            const targetSocket = onlineUsers.get(to);
-            if (targetSocket) {
-                targetSocket.emit('message', messageData);
-            }
-
-            // Also emit to sender, so sender can update their UI
-            socket.emit('message', messageData);
+            const roomName = [socket.username, to].sort().join('_');
+            io.to(roomName).emit('message', messageData);
         });
 
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async() => {
             console.log(`❌ ${socket.username} disconnected`);
-            onlineUsers.delete(socket.username);
+            if (socket.username) {
+                onlineUsers.delete(socket.username);
+
+                // ✅ Update lastSeen in DB
+                await User.findOneAndUpdate(
+                    { username: socket.username },
+                    { lastSeen: new Date() }
+                );
+
+                // Broadcast updated online users
+                const onlineUsernames = Array.from(onlineUsers.keys());
+                io.emit('online_users', onlineUsernames);
+            }
         });
     });
 

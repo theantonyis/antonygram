@@ -207,4 +207,9 @@ li {
     display: none !important;
 }
 
+.dropdown-item:active {
+    background-color: white !important;
+    color: inherit !important;
+}
+
 
