@@ -148,14 +148,10 @@ const Chat = () => {
                   isOnline: onlineUsers.includes(selectedContact.username),
                 }}
               />
-              <MessageList
-                messages={
-                  messages[selectedContact.username]
-                    ? messages[selectedContact.username]
-                    : []
-                }
-                currentUser={user}
-              />
+                <MessageList
+                    messages={chatHistory[selectedContact.username] || []}
+                    currentUser={user}
+                />
               <div className="mt-3">
                 <MessageInput onSend={onSend} />
               </div>

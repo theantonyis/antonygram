@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import api from '@/utils/axios';
+import api from '@utils/axios';
 
 export default function useContacts(onlineUsers, setContactsList) {
     useEffect(() => {

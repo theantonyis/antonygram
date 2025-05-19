@@ -39,6 +39,9 @@ export const initSocket = async (server, ioOptions) => {
         socket.on('message', async ({ to, text }) => {
             if (!to || !text) return;
 
+            // Get sender doc for avatar
+            const senderUser = await User.findOne({ username: socket.username });
+
             const newMessage = await Message.create({
                 from: socket.username,
                 to,
@@ -50,6 +53,7 @@ export const initSocket = async (server, ioOptions) => {
                 to,
                 text,
                 timestamp: newMessage.timestamp,
+                senderAvatar: senderUser?.avatar || '', // <--- add avatar here
             };
 
             const roomName = [socket.username, to].sort().join('_');

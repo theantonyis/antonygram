@@ -203,13 +203,27 @@ li {
     z-index: -1;
 }
 
-.no-caret::after {
-    display: none !important;
-}
-
 .dropdown-item:active {
     background-color: white !important;
     color: inherit !important;
 }
+
+.custom-dropdown-toggle {
+    color: inherit;
+    transition: color 0.2s ease;
+}
+
+.custom-dropdown-toggle:hover,
+.custom-dropdown-toggle:focus {
+    color: #ddd; /* light gray / near white */
+    cursor: pointer;
+}
+
+/* Optional: keep toggle light gray if contact is active (selected) */
+.list-group-item.active .custom-dropdown-toggle {
+    color: #ddd;
+}
+
+
 
 

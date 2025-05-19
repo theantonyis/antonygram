@@ -4,16 +4,26 @@ export default function useSocketMessages(socket, user, selectedContact, setChat
     useEffect(() => {
         if (!socket || !user) return;
 
-        const messageHandler = ({ from, to, text }) => {
+        const messageHandler = ({ from, to, text, timestamp, senderAvatar }) => {
             const contact = from === user.username ? to : from;
+            const isOwn = from === user.username;
+
+            // Normalize for MessageList fields
+            const formattedMessage = {
+                senderAvatar: senderAvatar || (isOwn ? user.avatar : null),
+                text,
+                timestamp: timestamp || new Date(),
+                from,
+                to,
+            };
 
             setChatHistory(prev => ({
                 ...prev,
-                [contact]: [...(prev[contact] || []), { from, to, text }],
+                [contact]: [...(prev[contact] || []), formattedMessage],
             }));
 
             if (contact === selectedContact) {
-                setMessages(prev => [...prev, { from, to, text }]);
+                setMessages(prev => [...prev, formattedMessage]);
             }
         };
 
