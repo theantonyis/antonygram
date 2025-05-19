@@ -11,7 +11,7 @@ import { initSocket } from './services/socket.js';
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors({origin: process.env.CLIENT_URL ||'*'}));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -23,7 +23,7 @@ connectToDB();
 const server = http.createServer(app);
 const io = initSocket(server, {
     cors: {
-        origin: '*',
+        origin: process.env.CLIENT_URL ||'*',
         methods: ["GET", "POST"],
         credentials: true,
     }
