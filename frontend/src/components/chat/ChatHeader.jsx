@@ -1,18 +1,17 @@
-// components/Chat/ChatHeader.js
 import React from 'react';
-import { Row, Col, Button } from 'react-bootstrap';
+import { Row, Col } from 'react-bootstrap';
 import Avatar from '../common/Avatar';
 
-const ChatHeader = ({ contact, onLogout }) => {
+const ChatHeader = ({ contact }) => {
     if (!contact) return null;
 
     return (
         <Row className="align-items-center border-bottom pb-2 mb-2">
-            <Col xs="auto">
+            <Col xs="auto" className="ms-3 mt-2"> {/* Added ms-3 for left margin */}
                 <Avatar avatar={contact.avatar} size={40} />
             </Col>
             <Col>
-                <h5 className="mb-0">{contact.username}</h5>
+                <h5 className="mb-0 mt-1">{contact.username}</h5>
                 <small className="text-muted">
                     {contact.isOnline ? 'Online' : `Last seen ${new Date(contact.lastSeen).toLocaleString()}`}
                 </small>

@@ -1,14 +1,14 @@
 import axios from 'axios';
 import Router from 'next/router';
 import { getToken } from './getToken';
-import nookies from "nookies";
+import { deleteCookie } from 'cookies-next';
 
 const api = axios.create({
     baseURL: '/api',
 });
 
 api.interceptors.request.use((config) => {
-    // На клієнті читаємо куки без контексту
+    // On the client, get cookie without context
     const token = getToken();
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -19,8 +19,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     response => response,
     error => {
-        if (typeof window !== 'undefined' && error.response && (error.response.status === 401 || error.response.status === 403)) {
-            nookies.destroy(null, 'token');  // очистити куки
+        if (
+            typeof window !== 'undefined' &&
+            error.response &&
+            (error.response.status === 401 || error.response.status === 403)
+        ) {
+            deleteCookie('token'); // ⬅ replaced nookies.destroy
             Router.push('/login');
         }
         return Promise.reject(error);
