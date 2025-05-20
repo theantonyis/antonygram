@@ -21,19 +21,42 @@ export const handleLogout = (router) => {
  * @param {object} params.user - Current user object.
  * @param {object} params.socket - Socket.io-client instance.
  * @param {function} params.setInput - State setter for input.
+ * @param {function} params.setMessages - State setter for messages.
+ * @param {function} params.setChatHistory - State setter for chat history.
  */
-export const handleSend = async ({ input, selectedContact, user, socket, setInput }) => {
+export const handleSend = async ({
+    input,
+    selectedContact,
+    user,
+    socket,
+    setInput,
+    setMessages,
+    setChatHistory,
+}) => {
     if (!input.trim() || !selectedContact) return;
 
+    const to = typeof selectedContact === 'string' ? selectedContact : selectedContact.username;
+
+    // Create a message object similar to what's returned by backend (add timestamp)
+    const now = new Date();
     const message = {
         from: user.username,
-        to: typeof selectedContact === 'string' ? selectedContact : selectedContact.username,
+        to,
         text: input.trim(),
+        timestamp: now.toISOString()
     };
 
     try {
         socket.emit('message', message);
         setInput('');
+
+        // Optimistically add message to UI
+        setMessages(prev => [...(Array.isArray(prev) ? prev : []), message]);
+        setChatHistory(prev => ({
+            ...prev,
+            [to]: [...(prev[to] || []), message]
+        }));
+
     } catch (err) {
         console.error('Failed to send message', err);
     }
@@ -86,15 +109,22 @@ export const handleDeleteContact = async ({
 
     const username = contact.username || contact;
     try {
+        // First, delete all chat messages with this contact on the backend
+        await api.delete(`${backendURL}/api/messages/${username}`);
+        // Then, delete the contact from backend
         await api.delete(`${backendURL}/api/contacts/${username}`);
+
+        // Remove from contacts list state
         setContactsList(prev => prev.filter(c => c.username !== username));
 
+        // Remove chat history locally
         setChatHistory(prev => {
             const newHistory = { ...prev };
             delete newHistory[username];
             return newHistory;
         });
 
+        // If this contact was the selected one, clear selection & messages
         if ((selectedContact?.username || selectedContact) === username) {
             setSelectedContact(null);
             setMessages([]);

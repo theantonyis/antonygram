@@ -55,7 +55,9 @@ const Chat = () => {
       selectedContact,
       user,
       socket,
-      setInput
+      setInput,
+      setMessages,
+      setChatHistory
     });
 
   const onClearChat = (contact) =>

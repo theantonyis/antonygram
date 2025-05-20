@@ -114,7 +114,7 @@ const ContactsList = ({
                                     <ListGroup.Item
                                         key={contact.username}
                                         action
-                                        onClick={() => {
+                                        onMouseDown={() => {
                                             setAddContactInput(contact.username);
                                             setShowPreview(false);
                                         }}
@@ -133,7 +133,7 @@ const ContactsList = ({
                             ) : externalSearchResult ? (
                                 <ListGroup.Item
                                     action
-                                    onClick={() => {
+                                    onMouseDown={() => {
                                         setAddContactInput(externalSearchResult.username);
                                         setShowPreview(false);
                                     }}
