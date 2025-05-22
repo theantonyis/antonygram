@@ -21,8 +21,6 @@ export const handleLogout = (router) => {
  * @param {object} params.user - Current user object.
  * @param {object} params.socket - Socket.io-client instance.
  * @param {function} params.setInput - State setter for input.
- * @param {function} params.setMessages - State setter for messages.
- * @param {function} params.setChatHistory - State setter for chat history.
  */
 export const handleSend = async ({
     input,

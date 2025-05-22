@@ -2,9 +2,9 @@
 import {Col, Offcanvas, Row} from "react-bootstrap";
 import ContactsList from "@components/chat/ContactsList";
 
-const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, onlineUsers, addContactInput, setAddContactInput, onAddContact, onClearChat, onDeleteContact, showContacts, setShowContacts, children}) => {
+const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, onlineUsers, addContactInput, setAddContactInput, onAddContact, onClearChat, onDeleteContact, unreadCounts, showContacts, setShowContacts, children}) => {
     return (
-        <Row className="mt-3" style={{ minHeight: "70vh" }}>
+        <Row className="flex-grow-1" style={{ flex: 1, minHeight: 0, height: "100%" }}>
             <Col xs={12} md={4} lg={3} className="d-none d-md-block">
                 <ContactsList
                     user={user}
@@ -14,6 +14,7 @@ const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, onlin
                     addContactInput={addContactInput}
                     setAddContactInput={setAddContactInput}
                     onAddContact={onAddContact}
+                    unreadCounts={unreadCounts}
                     onSelectContact={onSelectContact}
                     onClearChat={onClearChat}
                     onDeleteContact={onDeleteContact}
@@ -52,11 +53,11 @@ const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, onlin
                 style={{
                     background: "#f4f6fa",
                     borderRadius: "12px",
-                    minHeight: "60vh",
-                    maxHeight: "80vh",
-                    height: "75vh",
+                    height: "100%",
+                    minHeight: 0,
                     boxShadow: '0 2px 16px rgba(0,0,0,0.04)',
-                    padding: "0"
+                    padding: "0",
+                    flex: 1
                 }}
             >
                 {children}

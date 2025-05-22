@@ -83,7 +83,7 @@ function MyApp({ Component, pageProps }) {
                 <link rel="icon" href="/favicon.svg" />
             </Head>
             <Component {...pageProps} />
-            <ToastContainer />
+            <ToastContainer position="top-right" autoClose={3000}/>
         </>
     );
 }

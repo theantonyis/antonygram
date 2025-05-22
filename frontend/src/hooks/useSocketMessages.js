@@ -1,6 +1,8 @@
 import { useEffect } from "react";
+import { toast } from 'react-toastify';
 
-export default function useSocketMessages(socket, user, selectedContact, setChatHistory, setMessages) {
+
+export default function useSocketMessages(socket, user, selectedContact, setChatHistory, setMessages, setUnreadCounts) {
     useEffect(() => {
         if (!socket || !user) return;
 
@@ -31,11 +33,20 @@ export default function useSocketMessages(socket, user, selectedContact, setChat
                     )) return prev;
                     return [...prev, formattedMessage];
                 });
+            } else if (!isOwn) {
+                // Fire toast and update unread count
+                toast.info(`New message from ${from}: ${text}`);
+                if (setUnreadCounts) {
+                    setUnreadCounts(prev => ({
+                        ...prev,
+                        [from]: (prev[from] || 0) + 1
+                    }));
+                }
             }
         };
 
         socket.on('message', messageHandler);
 
         return () => socket.off('message', messageHandler);
-    }, [socket, user, selectedContact, setChatHistory, setMessages]);
+    }, [socket, user, selectedContact, setChatHistory, setMessages, setUnreadCounts]);
 }

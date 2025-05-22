@@ -15,8 +15,12 @@ const MessageList = ({ messages, currentUser }) => {
       <div className="text-muted text-center py-5">No messages yet</div>
     );
 
+    // Add h-100 and overflow-auto so it fills space and scrolls!
     return (
-        <div className="px-2 py-3" style={{ minHeight: '100%', background: 'none' }}>
+        <div
+            className="flex-grow-1 d-flex flex-column h-100 overflow-auto px-2 py-3"
+            style={{ background: 'none', minHeight: 0 }}
+        >
             {messages.map((msg, index) => {
                 const isOwn = msg.from === currentUser.username;
                 const avatar = msg.senderAvatar || (isOwn ? currentUser.avatar : null);

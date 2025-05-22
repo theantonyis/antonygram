@@ -224,6 +224,10 @@ li {
     color: #ddd;
 }
 
+.online-status {
+    @apply text-green-500;
+}
+
 
 
 

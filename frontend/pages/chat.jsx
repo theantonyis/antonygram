@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import { Container, Button, Row, Col, Image } from 'react-bootstrap';
 import Head from 'next/head';
 import { LogOut, Users } from 'lucide-react';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import useSocket from '../src/hooks/useSocket.js';
 import useAuthUser from '../src/hooks/useAuthUser.js';
 import useOnlineUsers from '../src/hooks/useOnlineUsers.js';
@@ -41,11 +43,13 @@ const Chat = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
   const [showContacts, setShowContacts] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({});
+
 
   useOnlineUsers(socket, user, setOnlineUsers);
   useContacts(onlineUsers, setContactsList);
   useChatHistory(selectedContact, chatHistory, setMessages, setChatHistory);
-  useSocketMessages(socket, user, selectedContact, setChatHistory, setMessages);
+  useSocketMessages(socket, user, selectedContact, setChatHistory, setMessages, unreadCounts ,setUnreadCounts);
 
   const onLogout = () => handleLogout(router);
 
@@ -102,22 +106,29 @@ const Chat = () => {
       setSearch: setAddContactInput
     });
 
-  const onSelectContact = (contact) =>
-    selectContact({
-      contact,
-      setSelectedContact,
-      setMessages,
-      chatHistory,
-      socket,
-      user
-    });
+  const onSelectContact = (contact) => {
+      selectContact({
+          contact,
+          setSelectedContact,
+          setMessages,
+          chatHistory,
+          socket,
+          user
+      });
+      if (contact && setUnreadCounts) {
+          setUnreadCounts(prev => ({
+              ...prev,
+              [contact.username]: 0,
+          }));
+      }
+  };
 
   return (
     <>
       <Head>
         <title>Chat | antonygram</title>
       </Head>
-      <Container fluid className="p-4" style={{ minHeight: '100vh' }}>
+      <Container fluid className="p-4" style={{ minHeight: '100vh', height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Row className="mb-4 align-items-center d-none d-md-flex">
           <Col xs="auto" className="d-flex align-items-center">
             <Image
@@ -145,14 +156,16 @@ const Chat = () => {
               onlineUsers={onlineUsers}
               addContactInput={addContactInput}
               setAddContactInput={setAddContactInput}
+              unreadCounts={unreadCounts}
               onAddContact={onAddContact}
               onClearChat={onClearChat}
               onDeleteContact={onDeleteContact}
               showContacts={showContacts}
               setShowContacts={setShowContacts}
           >
-            <div className="d-flex align-items-center justify-content-between py-2 px-3 d-flex d-md-none" style={{ marginTop: 8 }}>
-              <div className="d-flex align-items-center gap-2">
+          <ToastContainer position="top-right" autoClose={3000} />
+          <div className="d-flex align-items-center justify-content-between py-2 px-3 d-flex d-md-none" style={{ marginTop: 8 }}>
+            <div className="d-flex align-items-center gap-2">
                 <Button
                   variant="outline-secondary"
                   size="sm"
@@ -171,11 +184,11 @@ const Chat = () => {
                   height={32}
                 />
                 <span className="fw-bold">{user?.username}</span>
-              </div>
-              <Button variant="outline-danger" size="sm" onClick={onLogout}>
-                <LogOut size={16} />
-              </Button>
             </div>
+            <Button variant="outline-danger" size="sm" onClick={onLogout}>
+                <LogOut size={16} />
+            </Button>
+          </div>
           {selectedContact ? (
             <>
             <div className="px-3 pt-3 pb-0">

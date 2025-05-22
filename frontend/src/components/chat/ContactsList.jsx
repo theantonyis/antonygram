@@ -11,7 +11,7 @@ const ContactsList = ({
     user,
     contacts,
     selectedContact,
-    onlineUsers = [],
+    unreadCounts = {},
     addContactInput,
     setAddContactInput,
     onAddContact,
@@ -113,19 +113,19 @@ const ContactsList = ({
                                 previewResults.map(contact => (
                                     <ListGroup.Item
                                         key={contact.username}
-                                        action
-                                        onMouseDown={() => {
-                                            setAddContactInput(contact.username);
-                                            setShowPreview(false);
-                                        }}
-                                        className="d-flex align-items-center"
+                                        action={false}
+                                        className="d-flex align-items-center justify-content-between"
                                         style={{
-                                            cursor: 'pointer',
-                                            background: 'white',
+                                            background: 'var(--bs-light)',
+                                            cursor: 'not-allowed',
+                                            opacity: 0.65
                                         }}
                                     >
-                                        <Avatar avatar={contact.avatar} size={24} />
-                                        <span className="ms-2">{contact.username}</span>
+                                        <div className="d-flex align-items-center">
+                                            <Avatar avatar={contact.avatar} size={24} />
+                                            <span className="ms-2">{contact.username}</span>
+                                        </div>
+                                        <span className="badge bg-success ms-3" title="Already in contacts">Added</span>
                                     </ListGroup.Item>
                                 ))
                             ) : searchLoading ? (
@@ -154,6 +154,7 @@ const ContactsList = ({
                     {contacts.map((contact) => {
                         const isOnline = contact.isOnline;
                         const isSelected = selectedContact?.username === contact.username;
+                        const unread = unreadCounts[contact.username] || 0;
 
                         return (
                             <ListGroup.Item
@@ -167,14 +168,21 @@ const ContactsList = ({
                                 <div className="d-flex align-items-center">
                                     <Avatar avatar={contact.avatar} size={32} />
                                     <div className="ms-2">
-                                        <div>{contact.username}</div>
+                                        <div>
+                                            {contact.username}
+                                            {unread > 0 && (
+                                                <span className="badge bg-danger ms-2" title={`${unread} unread`}>
+                                                    {unread}
+                                                </span>
+                                            )}
+                                        </div>
                                         <small
                                             className={
                                                 isOnline
-                                                    ? 'text-success'
+                                                    ? 'online-status'
                                                     : isSelected
-                                                        ? 'text-white fw-bold'
-                                                        : 'text-muted'
+                                                    ? 'text-white fw-bold'
+                                                    : 'text-muted'
                                             }
                                         >
                                             {isOnline

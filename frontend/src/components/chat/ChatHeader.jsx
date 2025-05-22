@@ -13,7 +13,9 @@ const ChatHeader = ({ contact }) => {
             </Col>
             <Col>
                 <h5 className="mb-0">{contact.username}</h5>
-                <small className="text-muted">
+                <small
+                    className={contact.isOnline ? 'online-status' : 'text-muted'}
+                >
                     {contact.isOnline
                         ? 'Online'
                         : `Last seen ${dayjs(contact.lastSeen).format('DD/MM/YYYY HH:mm')}`}
