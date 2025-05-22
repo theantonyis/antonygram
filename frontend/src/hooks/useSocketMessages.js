@@ -6,9 +6,20 @@ export default function useSocketMessages(socket, user, selectedContact, setChat
     useEffect(() => {
         if (!socket || !user) return;
 
-        const messageHandler = ({ from, to, text, timestamp, senderAvatar }) => {
+        const messageHandler = (incoming) => {
+            const { from, to, text, timestamp, senderAvatar, replyTo} = incoming;
             const contact = from === user.username ? to : from;
             const isOwn = from === user.username;
+
+            // Look up replied-to message in local chat history (by _id)
+            let replyToFull = null;
+            if (replyTo && typeof replyTo === 'string') {
+                const chat = JSON.parse(JSON.stringify(window.chatHistory || {}));
+                const arr = chat[contact] || [];
+                replyToFull = arr.find(msg => msg._id === replyTo) || null;
+            } else if (typeof replyTo === 'object' && replyTo !== null) {
+                replyToFull = replyTo; // Already populated
+            }
 
             // Normalize for MessageList fields
             const formattedMessage = {
@@ -17,6 +28,8 @@ export default function useSocketMessages(socket, user, selectedContact, setChat
                 timestamp: timestamp || new Date(),
                 from,
                 to,
+                ...(incoming._id && { _id: incoming._id }),
+                ...(replyTo && { replyTo: replyToFull || replyTo })
             };
 
             setChatHistory(prev => ({

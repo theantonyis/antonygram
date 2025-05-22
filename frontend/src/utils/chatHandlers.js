@@ -28,6 +28,7 @@ export const handleSend = async ({
     user,
     socket,
     setInput,
+    replyTo
 }) => {
     if (!input.trim() || !selectedContact) return;
 
@@ -39,7 +40,8 @@ export const handleSend = async ({
         from: user.username,
         to,
         text: input.trim(),
-        timestamp: now.toISOString()
+        timestamp: now.toISOString(),
+        ...(replyTo && replyTo._id ? { replyTo: replyTo._id } : {})
     };
 
     try {
@@ -178,4 +180,54 @@ export const selectContact = ({
         socket.emit('joinRoom', { withUser });
     }
     setMessages(chatHistory[contact?.username || contact] || []);
+};
+
+/**
+ * Handles deleting a single message from both UI and backend.
+ * @param {object} params
+ * @param {object} params.msgToDelete - The message object to delete.
+ * @param {object} params.selectedContact - Currently selected contact.
+ * @param {function} params.setChatHistory - State setter for chat history.
+ * @param {function} params.setMessages - State setter for messages.
+ */
+export const handleDeleteMessage = async ({
+    msgToDelete,
+    selectedContact,
+    setChatHistory,
+    setMessages
+}) => {
+    if (!selectedContact || !msgToDelete || !msgToDelete._id) return;
+
+    try {
+        await api.delete(`${backendURL}/api/messages/single/${msgToDelete._id}`);
+    } catch (err) {
+        // Optionally show notification
+        console.error('Failed to delete message in backend', err);
+    }
+
+    setChatHistory(prev => {
+        const key = selectedContact.username || selectedContact;
+        const current = prev[key] || [];
+        return {
+            ...prev,
+            [key]: current.filter(msg => msg._id !== msgToDelete._id)
+        };
+    });
+
+    setMessages(prev =>
+        prev.filter(msg => msg._id !== msgToDelete._id)
+    );
+};
+
+/**
+ * Sets a message to reply to (i.e., update the replyTo state).
+ * @param {object} params
+ * @param {object} params.msg - The message being replied to.
+ * @param {function} params.setReplyTo - State setter for replyTo.
+ */
+export const handleReplyMessage = ({
+    msg,
+    setReplyTo
+}) => {
+    setReplyTo(msg);
 };

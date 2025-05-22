@@ -1,10 +1,13 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import Avatar from '../common/Avatar';
+// ...other imports remain the same
+import { Trash2, CornerDownLeft, MoreVertical } from 'lucide-react';
 
 const AVATAR_SIZE = 36;
 
-const MessageList = ({ messages, currentUser }) => {
+const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage }) => {
     const endRef = useRef(null);
+    const [openMenuIdx, setOpenMenuIdx] = useState(null);
 
     useEffect(() => {
         endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -12,10 +15,9 @@ const MessageList = ({ messages, currentUser }) => {
 
     if (!Array.isArray(messages)) return <div>not an array</div>;
     if (messages.length === 0) return (
-      <div className="text-muted text-center py-5">No messages yet</div>
+        <div className="text-muted text-center py-5">No messages yet</div>
     );
 
-    // Add h-100 and overflow-auto so it fills space and scrolls!
     return (
         <div
             className="flex-grow-1 d-flex flex-column h-100 overflow-auto px-2 py-3 message-list-wrapper"
@@ -24,17 +26,18 @@ const MessageList = ({ messages, currentUser }) => {
             {messages.map((msg, index) => {
                 const isOwn = msg.from === currentUser.username;
                 const avatar = msg.senderAvatar || (isOwn ? currentUser.avatar : null);
+
                 return (
                     <div
                         key={`${msg.from}_${msg.timestamp}_${msg.text}_${index}`}
                         className={`d-flex align-items-end mb-2 ${isOwn ? 'justify-content-end' : 'justify-content-start'}`}
-                        style={{ gap: '10px' }}
+                        style={{ gap: '10px', position: 'relative' }}
                     >
                         {!isOwn && <Avatar avatar={avatar} size={AVATAR_SIZE} className="chat-message-avatar" />}
                         <div
-                            className="chat-message-bubble"
+                            className="chat-message-bubble position-relative"
                             style={{
-                                maxWidth: '90%',
+                                maxWidth: '98%', // or try maxWidth: 640 if you prefer a pixel max
                                 display: 'inline-block',
                                 background: isOwn ? '#d0e6ff' : '#fff',
                                 color: '#232323',
@@ -45,9 +48,53 @@ const MessageList = ({ messages, currentUser }) => {
                                 fontSize: '1.07em',
                                 wordBreak: 'break-word',
                                 transition: 'background 0.18s',
-                                boxShadow: '0 1px 6px rgba(90,110,140,0.06)'
+                                boxShadow: '0 1px 6px rgba(90,110,140,0.06)',
+                                position: 'relative',
+                                overflow: 'visible'
                             }}
                         >
+                            {/* Always show reply preview if this is a reply */}
+                            {msg.replyTo && (
+                                <div
+                                    className="mb-2 small"
+                                    style={{
+                                        borderLeft: '3px solid #1976d2',
+                                        background: isOwn ? '#c9e3fb' : '#f0f4f8',
+                                        margin: '0 0 6px 0',
+                                        padding: '6px 10px',
+                                        borderRadius: 5,
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        fontStyle: 'italic',
+                                        maxWidth: '100%',
+                                    }}
+                                >
+                                    {msg.replyTo.senderAvatar && (
+                                        <Avatar avatar={msg.replyTo.senderAvatar} size={22} />
+                                    )}
+                                    <span style={{
+                                        fontWeight: 600,
+                                        color: '#3173b6',
+                                        marginRight: 3,
+                                    }}>
+                                        {msg.replyTo.from || 'Unknown'}
+                                    </span>
+                                    <span style={{
+                                        color: '#5e5e5e',
+                                        fontWeight: 400,
+                                        fontSize: '0.93em',
+                                    }}>
+                                        {msg.replyTo.text
+                                        ? (msg.replyTo.text.length > 60
+                                        ? msg.replyTo.text.slice(0, 60) + '…'
+                                        : msg.replyTo.text)
+                                        : '<no content>'}
+                                    </span>
+                                </div>
+                            )}
+
                             <div className="fw-semibold small mb-1"
                                  style={{
                                      color: '#3571b9',
@@ -66,6 +113,94 @@ const MessageList = ({ messages, currentUser }) => {
                                         hour12: false
                                     })}
                                 </span>
+                            </div>
+                            {/* inside MessageList component, inside the return (replace ONLY the bubble actions and remove the MoreVertical/menu logic): */}
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    top: 8,
+                                    right: 10,
+                                    zIndex: 3,
+                                }}
+                                tabIndex={-1}
+                                onBlur={() => setOpenMenuIdx(null)}
+                            >
+                                <MoreVertical
+                                    size={19}
+                                    style={{ cursor: 'pointer', opacity: 0.8 }}
+                                    onClick={() => setOpenMenuIdx(openMenuIdx === index ? null : index)}
+                                    title="More"
+                                />
+                                {openMenuIdx === index && (
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            top: 26,
+                                            right: 0,
+                                            background: '#fff',
+                                            boxShadow: '0 2px 12px rgba(60,80,110,.13)',
+                                            borderRadius: 7,
+                                            minWidth: 44,
+                                            padding: '2px 0',
+                                            zIndex: 333,
+                                            border: '1px solid #e4e9f2',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'stretch',
+                                        }}
+                                    >
+                                        <button
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                padding: '7px 10px',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                fontSize: 15,
+                                                color: '#3571b9',
+                                                transition: 'background 0.13s',
+                                            }}
+                                            onMouseDown={e => e.preventDefault()}
+                                            onClick={() => {
+                                                setOpenMenuIdx(null);
+                                                onReplyMessage(msg);
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.background='#f4f7fb'}
+                                            onMouseLeave={e => e.currentTarget.style.background='none'}
+                                            title="Reply"
+                                        >
+                                            <CornerDownLeft size={17} />
+                                        </button>
+                                        {isOwn && (
+                                            <button
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    padding: '7px 10px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 8,
+                                                    fontSize: 15,
+                                                    color: '#c43d2d',
+                                                    transition: 'background 0.13s',
+                                                }}
+                                                onMouseDown={e => e.preventDefault()}
+                                                onClick={() => {
+                                                    setOpenMenuIdx(null);
+                                                    onDeleteMessage(msg);
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.background='#fae7e7'}
+                                                onMouseLeave={e => e.currentTarget.style.background='none'}
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={17} />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         {isOwn && <Avatar avatar={avatar} size={AVATAR_SIZE} className="chat-message-avatar" />}

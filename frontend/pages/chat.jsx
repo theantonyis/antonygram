@@ -5,6 +5,7 @@ import Head from 'next/head';
 import { LogOut, Users } from 'lucide-react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { hydrateMessages } from '@utils/hydrateMessage.js';
 import useSocket from '../src/hooks/useSocket.js';
 import useAuthUser from '../src/hooks/useAuthUser.js';
 import useOnlineUsers from '../src/hooks/useOnlineUsers.js';
@@ -23,46 +24,52 @@ import {
   handleClear,
   handleDeleteContact,
   handleAddContact,
-  selectContact
+  selectContact,
+  handleDeleteMessage,
+  handleReplyMessage
 } from '@utils/chatHandlers.js';
 
 const DEFAULT_AVATAR = '/def-avatar.png';
 
 const Chat = () => {
-  const router = useRouter();
-  const socket = useSocket();
-  const user = useAuthUser(router);
+    const router = useRouter();
+    const socket = useSocket();
+    const user = useAuthUser(router);
 
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [contactsList, setContactsList] = useState([]);
-  const [selectedContact, setSelectedContact] = useState(null);
-  const [chatHistory, setChatHistory] = useState({});
-  const [addContactInput, setAddContactInput] = useState('');
-  const [onlineUsers, setOnlineUsers] = useState([]);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [contactToDelete, setContactToDelete] = useState(null);
-  const [showContacts, setShowContacts] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState({});
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const [contactsList, setContactsList] = useState([]);
+    const [selectedContact, setSelectedContact] = useState(null);
+    const [chatHistory, setChatHistory] = useState({});
+    const [addContactInput, setAddContactInput] = useState('');
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [contactToDelete, setContactToDelete] = useState(null);
+    const [showContacts, setShowContacts] = useState(false);
+    const [unreadCounts, setUnreadCounts] = useState({});
+    const [replyTo, setReplyTo] = useState(null);
 
 
-  useOnlineUsers(socket, user, setOnlineUsers);
-  useContacts(onlineUsers, setContactsList);
-  useChatHistory(selectedContact, chatHistory, setMessages, setChatHistory);
-  useSocketMessages(socket, user, selectedContact, setChatHistory, setMessages, unreadCounts ,setUnreadCounts);
+    useOnlineUsers(socket, user, setOnlineUsers);
+    useContacts(onlineUsers, setContactsList);
+    useChatHistory(selectedContact, chatHistory, setMessages, setChatHistory);
+    useSocketMessages(socket, user, selectedContact, setChatHistory, setMessages, unreadCounts, setUnreadCounts);
 
-  const onLogout = () => handleLogout(router);
+    const onLogout = () => handleLogout(router);
 
-  const onSend = (text) =>
-    handleSend({
-      input: text,
-      selectedContact,
-      user,
-      socket,
-      setInput,
-      setMessages,
-      setChatHistory
-    });
+    const onSend = (text) => {
+        handleSend({
+            input: text,
+            selectedContact,
+            user,
+            socket,
+            setInput,
+            setMessages,
+            setChatHistory,
+            replyTo,
+        });
+        setReplyTo(null);
+    };
 
   const onClearChat = (contact) =>
     handleClear({
@@ -123,7 +130,24 @@ const Chat = () => {
       }
   };
 
-  return (
+  const onDeleteMessage = (msg) =>
+    handleDeleteMessage({
+        msgToDelete: msg,
+        selectedContact,
+        setChatHistory,
+        setMessages,
+    });
+
+  const onReplyMessage = (msg) =>
+    handleReplyMessage({
+        msg,
+        setReplyTo,
+    });
+
+  const hydratedMessages = hydrateMessages(chatHistory[selectedContact?.username] || []);
+
+
+    return (
     <>
       <Head>
         <title>Chat | antonygram</title>
@@ -202,12 +226,18 @@ const Chat = () => {
             </div>
               <div className="flex-grow-1 overflow-auto d-flex flex-column justify-content-end px-0">
                 <MessageList
-                    messages={chatHistory[selectedContact.username] || []}
+                    messages={hydratedMessages}
                     currentUser={user}
+                    onDeleteMessage={onDeleteMessage}
+                    onReplyMessage={onReplyMessage}
                 />
               </div>
               <div className="p-3 border-top bg-white chat-input-wrapper" style={{ position: "relative" }}>
-                <MessageInput onSend={onSend} />
+                <MessageInput
+                    onSend={onSend}
+                    replyTo={replyTo}
+                    onCancelReply={() => setReplyTo(null)}
+                />
               </div>
             </>
           ) : (

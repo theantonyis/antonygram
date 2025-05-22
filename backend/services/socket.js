@@ -36,7 +36,7 @@ export const initSocket = async (server, ioOptions) => {
             console.log(`${socket.username} joined room ${roomName}`);
         });
 
-        socket.on('message', async ({ to, text }) => {
+        socket.on('message', async ({ to, text, replyTo }) => {
             if (!to || !text) return;
 
             // Get sender doc for avatar
@@ -46,6 +46,7 @@ export const initSocket = async (server, ioOptions) => {
                 from: socket.username,
                 to,
                 text,
+                replyTo: replyTo || null
             });
 
             const messageData = {
@@ -53,7 +54,8 @@ export const initSocket = async (server, ioOptions) => {
                 to,
                 text,
                 timestamp: newMessage.timestamp,
-                senderAvatar: senderUser?.avatar || '', // <--- add avatar here
+                senderAvatar: senderUser?.avatar || '',
+                replyTo: newMessage.replyTo
             };
 
             const roomName = [socket.username, to].sort().join('_');
