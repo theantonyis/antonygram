@@ -24,8 +24,46 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
             style={{ background: 'none', minHeight: 0 }}
         >
             {messages.map((msg, index) => {
+                if (msg.deleted) return null;
+
                 const isOwn = msg.from === currentUser.username;
                 const avatar = msg.senderAvatar || (isOwn ? currentUser.avatar : null);
+
+                // If the message itself is deleted
+                if (msg.deleted) {
+                    return (
+                        <div
+                            key={`${msg.from}_${msg.timestamp}_${msg._id || msg.text}_${index}`}
+                            className={`d-flex align-items-end mb-2 ${isOwn ? 'justify-content-end' : 'justify-content-start'}`}
+                            style={{ gap: '10px', position: 'relative' }}
+                        >
+                            {!isOwn && <Avatar avatar={avatar} size={AVATAR_SIZE} className="chat-message-avatar" />}
+                            <div
+                                className="chat-message-bubble position-relative"
+                                style={{
+                                    maxWidth: '98%',
+                                    display: 'inline-block',
+                                    background: '#f8fafc',
+                                    color: '#737373',
+                                    borderRadius: isOwn
+                                        ? '20px 20px 8px 20px'
+                                        : '20px 20px 20px 8px',
+                                    padding: '14px 20px',
+                                    fontSize: '1.07em',
+                                    wordBreak: 'break-word',
+                                    fontStyle: 'italic',
+                                    opacity: 0.8,
+                                    boxShadow: '0 1px 6px rgba(90,110,140,0.06)',
+                                    position: 'relative',
+                                    textAlign: isOwn ? "right" : "left"
+                                }}
+                            >
+                                <span className="text-muted">Message deleted</span>
+                            </div>
+                            {isOwn && <Avatar avatar={avatar} size={AVATAR_SIZE} className="chat-message-avatar" />}
+                        </div>
+                    );
+                }
 
                 return (
                     <div
@@ -53,7 +91,6 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                 overflow: 'visible'
                             }}
                         >
-                            {/* Always show reply preview if this is a reply */}
                             {msg.replyTo && (
                                 <div
                                     className="mb-2 small"
@@ -79,18 +116,23 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                         color: '#3173b6',
                                         marginRight: 3,
                                     }}>
-                                        {msg.replyTo.from || 'Unknown'}
+                                        {/* Always show a name, but don't show "Unknown" if message is deleted */}
+                                        {!msg.replyTo.deleted && msg.replyTo.from}
                                     </span>
                                     <span style={{
                                         color: '#5e5e5e',
                                         fontWeight: 400,
                                         fontSize: '0.93em',
                                     }}>
-                                        {msg.replyTo.text
-                                        ? (msg.replyTo.text.length > 60
-                                        ? msg.replyTo.text.slice(0, 60) + '…'
-                                        : msg.replyTo.text)
-                                        : '<no content>'}
+                                        {/* Only show "message deleted" for deleted replies */}
+                                        {msg.replyTo.deleted
+                                            ? <span className="text-muted" style={{ fontStyle: 'italic' }}>Message deleted</span>
+                                            : (msg.replyTo.text
+                                                ? (msg.replyTo.text.length > 60
+                                                    ? msg.replyTo.text.slice(0, 60) + '…'
+                                                    : msg.replyTo.text)
+                                                : '')
+                                        }
                                     </span>
                                 </div>
                             )}

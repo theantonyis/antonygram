@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { toast } from 'react-toastify';
 
 
-export default function useSocketMessages(socket, user, selectedContact, setChatHistory, setMessages, setUnreadCounts) {
+export default function useSocketMessages(socket, user, selectedContactRef, setChatHistory, setMessages, setUnreadCounts) {
     useEffect(() => {
         if (!socket || !user) return;
 
@@ -37,7 +37,7 @@ export default function useSocketMessages(socket, user, selectedContact, setChat
                 [contact]: [...(prev[contact] || []), formattedMessage],
             }));
 
-            if (contact === selectedContact) {
+            if (contact === selectedContactRef.current?.username) {
                 setMessages(prev => {
                     if (prev.some(msg =>
                         msg.timestamp === formattedMessage.timestamp &&
@@ -61,5 +61,5 @@ export default function useSocketMessages(socket, user, selectedContact, setChat
         socket.on('message', messageHandler);
 
         return () => socket.off('message', messageHandler);
-    }, [socket, user, selectedContact, setChatHistory, setMessages, setUnreadCounts]);
+    }, [socket, user, setChatHistory, setMessages, setUnreadCounts]);
 }

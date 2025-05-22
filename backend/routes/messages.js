@@ -29,7 +29,7 @@ router.get('/:contactUsername', auth, async (req, res) => {
             ],
         })
         .sort({ timestamp: 1 })
-        .populate('replyTo', 'from text senderAvatar');
+        .populate('replyTo', 'from text senderAvatar deleted');
 
         res.json({ messages });
     } catch (err) {
@@ -60,6 +60,30 @@ router.post('/', async (req, res) => {
 
 });
 
+// DELETE a single message by ID (authenticated)
+router.delete('/single/:messageId', auth, async (req, res) => {
+    const messageId = req.params.messageId;
+    const current = req.user.username;
+
+    try {
+        // Only allow deletion if the message belongs to the current user
+        const msg = await Message.findById(messageId);
+        if (!msg) return res.status(404).json({ message: 'Message not found' });
+        if (msg.from !== current) {
+            return res.status(403).json({ message: 'You can only delete your own messages' });
+        }
+
+        await Message.findByIdAndUpdate(messageId, {
+            deleted: true,
+            text: '',
+        });
+
+        res.status(200).json({ message: 'Message deleted' });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to delete message' });
+    }
+});
+
 // DELETE messages between current user and a contact
 router.delete('/:contactUsername', auth, async (req, res) => {
     const current = req.user.username;
@@ -78,26 +102,6 @@ router.delete('/:contactUsername', auth, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Failed to clear chat' });
-    }
-});
-
-// DELETE a single message by ID (authenticated)
-router.delete('/single/:messageId', auth, async (req, res) => {
-    const messageId = req.params.messageId;
-    const current = req.user.username;
-
-    try {
-        // Only allow deletion if the message belongs to the current user
-        const msg = await Message.findById(messageId);
-        if (!msg) return res.status(404).json({ message: 'Message not found' });
-        if (msg.from !== current) {
-            return res.status(403).json({ message: 'You can only delete your own messages' });
-        }
-
-        await Message.findByIdAndDelete(messageId);
-        res.status(200).json({ message: 'Message deleted' });
-    } catch (err) {
-        res.status(500).json({ message: 'Failed to delete message' });
     }
 });
 

@@ -11,6 +11,7 @@ const MessageSchema = new mongoose.Schema({
         ref: 'Message',
         required: false,
     },
+    deleted: { type: Boolean, default: false },
 });
 
 export const Message = mongoose.models.Message || mongoose.model('Message', MessageSchema);

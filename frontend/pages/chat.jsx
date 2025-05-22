@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import { useRouter } from 'next/router';
 import { Container, Button, Row, Col, Image } from 'react-bootstrap';
 import Head from 'next/head';
@@ -49,11 +49,13 @@ const Chat = () => {
     const [unreadCounts, setUnreadCounts] = useState({});
     const [replyTo, setReplyTo] = useState(null);
 
+    const selectedContactRef = useRef(selectedContact);
+
 
     useOnlineUsers(socket, user, setOnlineUsers);
     useContacts(onlineUsers, setContactsList);
     useChatHistory(selectedContact, chatHistory, setMessages, setChatHistory);
-    useSocketMessages(socket, user, selectedContact, setChatHistory, setMessages, unreadCounts, setUnreadCounts);
+    useSocketMessages(socket, user, selectedContactRef, setChatHistory, setMessages, unreadCounts, setUnreadCounts);
 
     const onLogout = () => handleLogout(router);
 
@@ -130,12 +132,13 @@ const Chat = () => {
       }
   };
 
-  const onDeleteMessage = (msg) =>
-    handleDeleteMessage({
-        msgToDelete: msg,
-        selectedContact,
-        setChatHistory,
-        setMessages,
+    // Replace onDeleteMessage to use the cascade function instead:
+    const onDeleteMessage = (msg) =>
+        handleDeleteMessage({
+            msgToDelete: msg,
+            selectedContact,
+            setChatHistory,
+            setMessages,
     });
 
   const onReplyMessage = (msg) =>
@@ -145,6 +148,10 @@ const Chat = () => {
     });
 
   const hydratedMessages = hydrateMessages(chatHistory[selectedContact?.username] || []);
+
+  useEffect(() => {
+        selectedContactRef.current = selectedContact;
+  }, [selectedContact]);
 
 
     return (

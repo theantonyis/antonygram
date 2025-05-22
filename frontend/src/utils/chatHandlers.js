@@ -210,12 +210,20 @@ export const handleDeleteMessage = async ({
         const current = prev[key] || [];
         return {
             ...prev,
-            [key]: current.filter(msg => msg._id !== msgToDelete._id)
+            [key]: current.map(msg =>
+                msg._id === msgToDelete._id
+                    ? { ...msg, deleted: true, text: '' }
+                    : msg
+            ),
         };
     });
 
     setMessages(prev =>
-        prev.filter(msg => msg._id !== msgToDelete._id)
+        prev.map(msg =>
+            msg._id === msgToDelete._id
+                ? { ...msg, deleted: true, text: '' }
+                : msg
+        )
     );
 };
 
