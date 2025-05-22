@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
-    const url = request.nextUrl;
+    const link = request.nextUrl;
 
-    if (url.pathname === '/') {
+    if (link.pathname === '/') {
         return NextResponse.redirect(new URL('/login', request.url), 307);
     }
 
@@ -11,5 +11,5 @@ export function middleware(request) {
 }
 
 export const config = {
-    matcher: '/', // only match homepage
+    matcher: '/',
 };
