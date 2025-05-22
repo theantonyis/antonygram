@@ -29,7 +29,7 @@ connectToDB();
 const server = http.createServer(app);
 const io = initSocket(server, {
     cors: {
-        origin: process.env.CLIENT_URL ||'*',
+        origin: allowedOrigins,
         methods: ["GET", "POST"],
         credentials: true,
     }

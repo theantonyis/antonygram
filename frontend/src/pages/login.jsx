@@ -22,7 +22,7 @@ const Login = () => {
             const response = await api.post('/auth/login', { username, password }, { withCredentials: true });
             const { token } = response.data;
             document.cookie = `token=${token}; path=/; max-age=3600`;
-            router.push('/chat');
+            await router.push('/chat');
         } catch (error) {
             setErrorMessage(error.response?.data?.message || 'Something went wrong. Please try again.');
         } finally {
