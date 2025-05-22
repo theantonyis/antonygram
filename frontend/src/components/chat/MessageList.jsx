@@ -22,7 +22,7 @@ const MessageList = ({ messages, currentUser }) => {
                 const avatar = msg.senderAvatar || (isOwn ? currentUser.avatar : null);
                 return (
                     <div
-                        key={index}
+                        key={`${msg.from}_${msg.timestamp}_${msg.text}_${index}`}
                         className={`d-flex align-items-end mb-2 ${isOwn ? 'justify-content-end' : 'justify-content-start'}`}
                         style={{ gap: '10px' }}
                     >

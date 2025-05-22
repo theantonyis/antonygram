@@ -23,7 +23,14 @@ export default function useSocketMessages(socket, user, selectedContact, setChat
             }));
 
             if (contact === selectedContact) {
-                setMessages(prev => [...prev, formattedMessage]);
+                setMessages(prev => {
+                    if (prev.some(msg =>
+                        msg.timestamp === formattedMessage.timestamp &&
+                        msg.from === formattedMessage.from &&
+                        msg.text === formattedMessage.text
+                    )) return prev;
+                    return [...prev, formattedMessage];
+                });
             }
         };
 

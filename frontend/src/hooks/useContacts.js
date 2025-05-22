@@ -11,7 +11,7 @@ export default function useContacts(onlineUsers, setContactsList) {
                 setContactsList(
                     res.data.contacts.map((c) => ({
                         ...c,
-                        online: onlineUsers.includes(c.username),
+                        isOnline: onlineUsers.includes(c.username),
                     }))
                 );
             } catch (error) {

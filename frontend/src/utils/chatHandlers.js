@@ -30,8 +30,6 @@ export const handleSend = async ({
     user,
     socket,
     setInput,
-    setMessages,
-    setChatHistory,
 }) => {
     if (!input.trim() || !selectedContact) return;
 
@@ -49,14 +47,6 @@ export const handleSend = async ({
     try {
         socket.emit('message', message);
         setInput('');
-
-        // Optimistically add message to UI
-        setMessages(prev => [...(Array.isArray(prev) ? prev : []), message]);
-        setChatHistory(prev => ({
-            ...prev,
-            [to]: [...(prev[to] || []), message]
-        }));
-
     } catch (err) {
         console.error('Failed to send message', err);
     }
@@ -176,11 +166,18 @@ export const handleAddContact = async ({ e, search, setContactsList, setSelected
  * @param {object} params.socket - Socket.io-client instance.
  * @param {object} params.user - Current user object.
  */
-export const selectContact = ({ contact, setSelectedContact, setMessages, chatHistory, socket, user }) => {
+export const selectContact = ({
+    contact,
+    setSelectedContact,
+    setMessages,
+    chatHistory,
+    socket,
+    user
+}) => {
     setSelectedContact(contact);
-    setMessages(chatHistory[contact?.username || contact] || []);
-
-    if (socket && user?.username) {
-        socket.emit('joinRoom', { withUser: contact?.username || contact });
+    if (socket && user && contact) {
+        const withUser = typeof contact === 'string' ? contact : contact.username;
+        socket.emit('joinRoom', { withUser });
     }
+    setMessages(chatHistory[contact?.username || contact] || []);
 };

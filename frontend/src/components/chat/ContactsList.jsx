@@ -152,7 +152,7 @@ const ContactsList = ({
                 {/* --- Contacts list is rendered after preview --- */}
                 <ListGroup className="bg-white z-10">
                     {contacts.map((contact) => {
-                        const isOnline = onlineUsers.includes(contact.username);
+                        const isOnline = contact.isOnline;
                         const isSelected = selectedContact?.username === contact.username;
 
                         return (
