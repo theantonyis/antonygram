@@ -3,7 +3,7 @@ import { Container, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import api from '@utils/axios';
+import api from '@utils/axios.js';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {

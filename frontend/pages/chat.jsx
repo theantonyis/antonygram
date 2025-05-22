@@ -3,17 +3,17 @@ import { useRouter } from 'next/router';
 import { Container, Button, Row, Col, Image } from 'react-bootstrap';
 import Head from 'next/head';
 import { LogOut, Users } from 'lucide-react';
-import useSocket from '../hooks/useSocket';
-import useAuthUser from '../hooks/useAuthUser';
-import useOnlineUsers from '../hooks/useOnlineUsers';
-import useContacts from '../hooks/useContacts';
-import useSocketMessages from '../hooks/useSocketMessages';
-import useChatHistory from '../hooks/useChatHistory';
-import ChatLayout from "@components/layout/ChatLayout";
-import ChatHeader from '@components/chat/ChatHeader';
-import MessageList from '@components/chat/MessageList';
-import MessageInput from '@components/chat/MessageInput';
-import DeleteContactModal from '@components/chat/DeleteContactModal';
+import useSocket from '../src/hooks/useSocket.js';
+import useAuthUser from '../src/hooks/useAuthUser.js';
+import useOnlineUsers from '../src/hooks/useOnlineUsers.js';
+import useContacts from '../src/hooks/useContacts.js';
+import useSocketMessages from '../src/hooks/useSocketMessages.js';
+import useChatHistory from '../src/hooks/useChatHistory.js';
+import ChatLayout from "@components/layout/ChatLayout.jsx";
+import ChatHeader from '@components/chat/ChatHeader.jsx';
+import MessageList from '@components/chat/MessageList.jsx';
+import MessageInput from '@components/chat/MessageInput.jsx';
+import DeleteContactModal from '@components/chat/DeleteContactModal.jsx';
 
 import {
   handleLogout,
@@ -22,7 +22,7 @@ import {
   handleDeleteContact,
   handleAddContact,
   selectContact
-} from '@utils/chatHandlers';
+} from '@utils/chatHandlers.js';
 
 const DEFAULT_AVATAR = '/def-avatar.png';
 
