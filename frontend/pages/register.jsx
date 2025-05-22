@@ -47,10 +47,11 @@ const Register = () => {
         <>
             <Head>
                 <title>register | antonygram</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
             </Head>
 
-            <div className="register-page fixed inset-0 bg-gray-100/50 flex justify-center items-center">
-                <Container className="register-container w-50 max-w-md bg-white p-6 rounded-lg shadow-lg relative z-10">
+            <div className="register-page min-h-screen flex items-center justify-center bg-gray-100/50">
+                <Container className="register-container bg-white p-4 p-sm-6 rounded-lg shadow-lg w-100" style={{maxWidth: 400}}>
                     <Row>
                         <Col className="register-header text-center mb-3">
                             <h1 className="text-3xl font-bold text-green-600">antonygram</h1>

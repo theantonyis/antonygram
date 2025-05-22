@@ -127,6 +127,7 @@ const Chat = () => {
     <>
       <Head>
         <title>Chat | antonygram</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <Container fluid className="p-4" style={{ minHeight: '100vh', height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Row className="mb-4 align-items-center d-none d-md-flex">
@@ -205,7 +206,7 @@ const Chat = () => {
                     currentUser={user}
                 />
               </div>
-              <div className="p-3 border-top bg-white" style={{ position: "relative" }}>
+              <div className="p-3 border-top bg-white chat-input-wrapper" style={{ position: "relative" }}>
                 <MessageInput onSend={onSend} />
               </div>
             </>

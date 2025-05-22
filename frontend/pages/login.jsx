@@ -34,10 +34,11 @@ const Login = () => {
         <>
             <Head>
                 <title>login | antonygram</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
             </Head>
 
-            <div className="login-page fixed inset-0 bg-gray-100/50 flex justify-center items-center">
-                <Container className="login-container w-50 bg-white p-6 rounded-lg shadow-lg relative z-10">
+            <div className="login-page min-h-screen flex items-center justify-center bg-gray-100/50">
+                <Container className="login-container bg-white p-4 p-sm-6 rounded-lg shadow-lg w-100" style={{maxWidth: 400}}>
                     <header className="login-header text-center mb-4">
                         <h1 className="text-3xl font-bold text-green-600">antonygram</h1>
                     </header>

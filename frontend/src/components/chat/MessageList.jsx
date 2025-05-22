@@ -18,7 +18,7 @@ const MessageList = ({ messages, currentUser }) => {
     // Add h-100 and overflow-auto so it fills space and scrolls!
     return (
         <div
-            className="flex-grow-1 d-flex flex-column h-100 overflow-auto px-2 py-3"
+            className="flex-grow-1 d-flex flex-column h-100 overflow-auto px-2 py-3 message-list-wrapper"
             style={{ background: 'none', minHeight: 0 }}
         >
             {messages.map((msg, index) => {
@@ -30,8 +30,9 @@ const MessageList = ({ messages, currentUser }) => {
                         className={`d-flex align-items-end mb-2 ${isOwn ? 'justify-content-end' : 'justify-content-start'}`}
                         style={{ gap: '10px' }}
                     >
-                        {!isOwn && <Avatar avatar={avatar} size={AVATAR_SIZE} />}
+                        {!isOwn && <Avatar avatar={avatar} size={AVATAR_SIZE} className="chat-message-avatar" />}
                         <div
+                            className="chat-message-bubble"
                             style={{
                                 maxWidth: '90%',
                                 display: 'inline-block',
@@ -67,7 +68,7 @@ const MessageList = ({ messages, currentUser }) => {
                                 </span>
                             </div>
                         </div>
-                        {isOwn && <Avatar avatar={avatar} size={AVATAR_SIZE} />}
+                        {isOwn && <Avatar avatar={avatar} size={AVATAR_SIZE} className="chat-message-avatar" />}
                     </div>
                 );
             })}

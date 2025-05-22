@@ -11,5 +11,5 @@ export default function useOnlineUsers(socket, user, setOnlineUsers) {
         socket.on('online_users', handleOnlineUsers);
 
         return () => socket.off('online_users', handleOnlineUsers);
-    }, [socket, setOnlineUsers]);
+    }, [socket, user, setOnlineUsers]);
 }
