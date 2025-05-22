@@ -31,7 +31,7 @@ export const getMessagesBetween = async (user1, user2) => {
 
 export const addMessage = async (text, from, to) => {
   const msg = new Message({ text, from, to });
-  return await msg.save();
+  return msg.save();
 };
 
 export const isUserExist = async (username) => {
@@ -53,22 +53,6 @@ export const addUser = async (user) => {
   } catch (err) {
     console.error('Error adding user:', err);
     throw err;  // rethrow
-  }
-};
-
-export const getAuthToken = async (user) => {
-  try {
-    const candidate = await User.findOne({ username: user.username });
-    if (!candidate) throw 'Wrong login';
-
-    const { _id, username, password, salt } = candidate;
-    const hash = crypto.pbkdf2Sync(user.password, salt, 1000, 64, 'sha512').toString('hex');
-    if (password !== hash) throw 'Wrong password';
-
-    return `${_id}.${username}.${crypto.randomBytes(20).toString('hex')}`;
-  } catch (err) {
-    console.error('Error generating auth token:', err);
-    throw err;
   }
 };
 
