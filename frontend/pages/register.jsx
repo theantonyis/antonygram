@@ -20,7 +20,13 @@ const Register = () => {
         setErrorMessage('');
         setSuccessMessage('');
 
-        if (password !== passwordRepeat) {
+        // Remove all spaces (spaces, tabs, etc.) from input before sending
+        const usernameNoSpaces = username.replace(/\s/g, '');
+        const passwordNoSpaces = password.replace(/\s/g, '');
+        const passwordRepeatNoSpaces = passwordRepeat.replace(/\s/g, '');
+
+        // Optionally ensure user knows passwords must match after removing spaces
+        if (passwordNoSpaces !== passwordRepeatNoSpaces) {
             setErrorMessage('Passwords do not match!');
             return;
         }
@@ -28,7 +34,7 @@ const Register = () => {
         try {
             const response = await api.post(
                 '/auth/register',
-                { username, password },
+                { username: usernameNoSpaces, password: passwordNoSpaces },
                 { withCredentials: true }
             );
 

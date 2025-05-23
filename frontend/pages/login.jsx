@@ -18,8 +18,13 @@ const Login = () => {
         e.preventDefault();
         setErrorMessage('');
         setLoading(true);
+
+        // Remove all spaces from input before sending
+        const usernameWithoutSpaces = username.replace(/\s/g, '');
+        const passwordWithoutSpaces = password.replace(/\s/g, '');
+
         try {
-            const response = await api.post('/auth/login', { username, password }, { withCredentials: true });
+            const response = await api.post('/auth/login', { username: usernameWithoutSpaces, password: passwordWithoutSpaces }, { withCredentials: true });
             const { token } = response.data;
             document.cookie = `token=${token}; path=/; max-age=3600`;
             await router.push('/chat');

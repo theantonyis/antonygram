@@ -1,6 +1,7 @@
 // utils/chatHandlers.js
 
 import api from '@utils/axios';
+import { encrypt } from '@utils/aes256';
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -34,12 +35,14 @@ export const handleSend = async ({
 
     const to = typeof selectedContact === 'string' ? selectedContact : selectedContact.username;
 
+    const encryptedText = encrypt(input.trim());
+
     // Create a message object similar to what's returned by backend (add timestamp)
     const now = new Date();
     const message = {
         from: user.username,
         to,
-        text: input.trim(),
+        text: encryptedText,
         timestamp: now.toISOString(),
         ...(replyTo && replyTo._id ? { replyTo: replyTo._id } : {})
     };

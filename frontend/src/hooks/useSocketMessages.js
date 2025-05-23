@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { toast } from 'react-toastify';
+import { decrypt } from "@utils/aes256";
 
 
 export default function useSocketMessages(socket, user, selectedContactRef, setChatHistory, setMessages, setUnreadCounts) {
@@ -10,6 +11,15 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
             const { from, to, text, timestamp, senderAvatar, replyTo} = incoming;
             const contact = from === user.username ? to : from;
             const isOwn = from === user.username;
+
+            let decryptedText;
+            try {
+                decryptedText = decrypt(text);
+            } catch (err) {
+                decryptedText = "[Could not decrypt message]";
+                console.error('Failed to decrypt message', err);
+                return;
+            }
 
             // Look up replied-to message in local chat history (by _id)
             let replyToFull = null;
@@ -24,7 +34,7 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
             // Normalize for MessageList fields
             const formattedMessage = {
                 senderAvatar: senderAvatar || (isOwn ? user.avatar : null),
-                text,
+                text: decryptedText,
                 timestamp: timestamp || new Date(),
                 from,
                 to,
