@@ -1,21 +1,32 @@
 // @utils/hydrateMessages.js
+import { decrypt } from '@utils/aes256';
+
 
 export const hydrateMessages = (messages) => {
   const messageMap = {};
   messages.forEach(msg => { messageMap[msg._id] = msg; });
 
   return messages.map(msg => {
+    // Decrypt the main message text
+    const decryptedText = msg.text ? decrypt(msg.text) : msg.text;
+
     if (msg.replyTo && typeof msg.replyTo === 'string' && messageMap[msg.replyTo]) {
+      const replyMsg = messageMap[msg.replyTo];
       return {
         ...msg,
+        text: decryptedText,
         replyTo: {
-          _id: messageMap[msg.replyTo]._id,
-          from: messageMap[msg.replyTo].from,
-          text: messageMap[msg.replyTo].text,
-          senderAvatar: messageMap[msg.replyTo].senderAvatar,
+          _id: replyMsg._id,
+          from: replyMsg.from,
+          // Decrypt reply message text as well
+          text: replyMsg.text ? decrypt(replyMsg.text) : replyMsg.text,
+          senderAvatar: replyMsg.senderAvatar,
         },
       };
     }
-    return msg;
+    return {
+      ...msg,
+      text: decryptedText,
+    };
   });
 };
