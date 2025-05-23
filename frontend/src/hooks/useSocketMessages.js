@@ -26,9 +26,18 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
             if (replyTo && typeof replyTo === 'string') {
                 const chat = JSON.parse(JSON.stringify(window.chatHistory || {}));
                 const arr = chat[contact] || [];
-                replyToFull = arr.find(msg => msg._id === replyTo) || null;
+                const found = arr.find(msg => msg._id === replyTo) || null;
+                if (found) {
+                    replyToFull = {
+                        ...found,
+                        text: found.text ? decrypt(found.text) : found.text,
+                    };
+                }
             } else if (typeof replyTo === 'object' && replyTo !== null) {
-                replyToFull = replyTo; // Already populated
+                replyToFull = {
+                    ...replyTo,
+                    text: replyTo.text ? decrypt(replyTo.text) : replyTo.text,
+                };
             }
 
             // Normalize for MessageList fields
@@ -71,5 +80,5 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
         socket.on('message', messageHandler);
 
         return () => socket.off('message', messageHandler);
-    }, [socket, user, setChatHistory, setMessages, setUnreadCounts]);
+    }, [socket, user, setChatHistory, setMessages, setUnreadCounts, selectedContactRef]);
 }
