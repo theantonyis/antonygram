@@ -5,6 +5,7 @@ import http from 'http';
 import authRoutes from './routes/auth.js';
 import messageRoutes from './routes/messages.js';
 import contactsRoutes from './routes/contacts.js';
+import groupsRoutes from './routes/groups.js';
 import { connectToDB } from './services/db.js';
 import { initSocket } from './services/socket.js';
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/contacts', contactsRoutes);
+app.use('/api/groups', groupsRoutes);
 
 connectToDB();
 

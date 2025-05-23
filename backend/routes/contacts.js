@@ -17,6 +17,7 @@ router.get('/', auth, async (req, res) => {
 
         // Додаємо поле "online" із onlineUsers Map
         const enrichedContacts = contacts.map(contact => ({
+            _id: contact._id,
             username: contact.username,
             avatar: contact.avatar,
             lastSeen: contact.lastSeen,
@@ -55,15 +56,16 @@ router.post('/add', auth, async (req, res) => {
             .select('username avatar lastSeen');
 
         const enrichedContacts = contacts.map(contact => ({
+            _id: contact._id,
             username: contact.username,
             avatar: contact.avatar,
             lastSeen: contact.lastSeen,
             online: onlineUsers.has(contact.username)
         }));
 
-        res.json({ 
-            success: true, 
-            message: 'Contact added', 
+        res.json({
+            success: true,
+            message: 'Contact added',
             contacts: enrichedContacts
         });
     } catch (err) {
@@ -94,6 +96,7 @@ router.get('/search', auth, async (req, res) => {
 
         res.json({
             users: results.map(u => ({
+                _id: u._id,
                 username: u.username,
                 avatar: u.avatar || null
             }))
@@ -125,6 +128,7 @@ router.delete('/:username', auth, async (req, res) => {
         const contacts = await User.find({ username: { $in: user.contacts } })
             .select('username avatar lastSeen');
         const enrichedContacts = contacts.map(contact => ({
+            _id: contact._id,
             username: contact.username,
             avatar: contact.avatar,
             lastSeen: contact.lastSeen,

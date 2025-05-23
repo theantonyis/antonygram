@@ -6,16 +6,17 @@ import { LogOut, Users } from 'lucide-react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { hydrateMessages } from '@utils/hydrateMessage.js';
-import useSocket from '../src/hooks/useSocket.js';
-import useAuthUser from '../src/hooks/useAuthUser.js';
-import useOnlineUsers from '../src/hooks/useOnlineUsers.js';
-import useContacts from '../src/hooks/useContacts.js';
-import useSocketMessages from '../src/hooks/useSocketMessages.js';
-import useChatHistory from '../src/hooks/useChatHistory.js';
+import useSocket from '@hooks/useSocket.js';
+import useAuthUser from '@hooks/useAuthUser.js';
+import useOnlineUsers from '@hooks/useOnlineUsers.js';
+import useContacts from '@hooks/useContacts.js';
+import useSocketMessages from '@hooks/useSocketMessages.js';
+import useChatHistory from '@hooks/useChatHistory.js';
 import ChatLayout from "@components/layout/ChatLayout.jsx";
 import ChatHeader from '@components/chat/ChatHeader.jsx';
 import MessageList from '@components/chat/MessageList.jsx';
 import MessageInput from '@components/chat/MessageInput.jsx';
+import GroupChat from '@components/chat/GroupChat.jsx';
 import DeleteContactModal from '@components/chat/DeleteContactModal.jsx';
 
 import {
@@ -222,8 +223,40 @@ const Chat = () => {
             </Button>
           </div>
           {selectedContact ? (
-            <>
-            <div className="px-3 pt-3 pb-0">
+              selectedContact.groupId ? (
+                      <GroupChat
+                          group={selectedContact}
+                          messages={chatHistory[selectedContact.groupId] || []}
+                          currentUser={user}
+                          onSendMessage={text => {
+                              handleSend({
+                                  input: text,
+                                  selectedContact,
+                                  user,
+                                  socket,
+                                  setInput,
+                                  setMessages,
+                                  setChatHistory,
+                                  replyTo,
+                                  isGroup: true, // Add this flag for clarity in your handler
+                              });
+                              setReplyTo(null);
+                          }}
+                          onDeleteMessage={msg =>
+                              handleDeleteMessage({
+                                  msgToDelete: msg,
+                                  selectedContact,
+                                  setChatHistory,
+                                  setMessages,
+                              })
+                          }
+                          onReplyMessage={msg => setReplyTo(msg)}
+                          replyTo={replyTo}
+                          onCancelReply={() => setReplyTo(null)}
+                      />
+                ) : (
+                    <>
+                    <div className="px-3 pt-3 pb-0">
               <ChatHeader
                 contact={{
                   ...selectedContact,
@@ -247,7 +280,8 @@ const Chat = () => {
                 />
               </div>
             </>
-          ) : (
+              )
+            ) : (
             <div className="text-muted text-center mt-5">
               Select a contact to start chatting.
             </div>

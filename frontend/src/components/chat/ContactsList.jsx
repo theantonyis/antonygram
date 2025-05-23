@@ -1,9 +1,11 @@
 import React, {useState, useRef, useEffect} from 'react';
 import { ListGroup, Form, Button, Dropdown } from 'react-bootstrap';
-import { UserMinus, Plus, MoreVertical, Trash2 } from 'lucide-react';
+import { UserMinus, Plus, MoreVertical, Trash2, Users } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import dayjs from 'dayjs';
 import api from "@utils/axios.js";
+import useGroups from '@hooks/useGroups.js';
+import GroupCreationForm from './GroupForm';
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -22,6 +24,8 @@ const ContactsList = ({
     const [openDropdown, setOpenDropdown] = useState(null);
     const [showPreview, setShowPreview] = useState(true); // control preview visibility
     const inputGroupRef = useRef(null);
+    const [showGroupForm, setShowGroupForm] = useState(false);
+    const [groups, setGroups] = useState([]);
 
     // Add state for searched user(s) not yet in contacts
     const [externalSearchResult, setExternalSearchResult] = useState(null);
@@ -34,6 +38,8 @@ const ContactsList = ({
                 contact.username.toLowerCase().includes(addContactInput.toLowerCase())
         )
         : [];
+
+    const { refreshGroups } = useGroups(setGroups);
 
     // EFFECT: Query backend if no local result, and input is present
     useEffect(() => {
@@ -89,8 +95,15 @@ const ContactsList = ({
                             className="me-2"
                             autoComplete="off"
                         />
-                        <Button variant="primary" onClick={onAddContact}>
+                        <Button variant="outline-primary" onClick={onAddContact} className="me-2" title="Add Contact">
                             <Plus size={20} />
+                        </Button>
+                        <Button
+                            variant="outline-success"
+                            onClick={() => setShowGroupForm(true)}
+                            title="Create Group"
+                        >
+                            <Users size={20} />
                         </Button>
                     </div>
 
@@ -151,6 +164,42 @@ const ContactsList = ({
                 </div>
                 {/* --- Contacts list is rendered after preview --- */}
                 <ListGroup className="bg-white z-10">
+                    {/* Groups section */}
+                    {groups.map(group => {
+                        const isSelected = selectedContact?.groupId === group._id;
+                        const unread = unreadCounts[group._id] || 0;
+
+                        return (
+                            <ListGroup.Item
+                                as="div"
+                                key={group._id}
+                                action
+                                active={isSelected}
+                                onClick={() => onSelectContact({ groupId: group._id, ...group })}
+                                className="d-flex justify-content-between align-items-center cursor-pointer"
+                            >
+                                <div className="d-flex align-items-center">
+                                    {/* Use group avatar/icon or Users icon */}
+                                    <Avatar avatar={group.avatar} size={32} fallbackIcon={<Users size={28} />} />
+                                    <div className="ms-2">
+                                        <div>
+                                            {group.name}
+                                            {unread > 0 && (
+                                                <span className="badge bg-danger ms-2" title={`${unread} unread`}>
+                                                    {unread}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <small className="text-muted">
+                                            {group.members.length} members
+                                        </small>
+                                    </div>
+                                </div>
+                                {/* Optional: Add group dropdown for actions like "Leave Group" */}
+                            </ListGroup.Item>
+                        );
+                    })}
+
                     {contacts.map((contact) => {
                         const isOnline = contact.isOnline;
                         const isSelected = selectedContact?.username === contact.username;
@@ -239,6 +288,14 @@ const ContactsList = ({
                     })}
                 </ListGroup>
             </div>
+
+            {/* Render group creation form modal */}
+            <GroupCreationForm
+                show={showGroupForm}
+                onHide={() => setShowGroupForm(false)}
+                contacts={contacts}
+                onGroupCreated={() => setShowGroupForm(false)}
+            />
         </div>
     );
 };
