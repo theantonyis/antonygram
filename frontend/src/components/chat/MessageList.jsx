@@ -91,7 +91,7 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                 overflow: 'visible'
                             }}
                         >
-                            {msg.replyTo && (
+                            {msg.replyTo && typeof msg.replyTo === 'object' && (msg.replyTo.from || msg.replyTo.text || msg.replyTo.deleted !== undefined) && (
                                 <div
                                     className="mb-2 small"
                                     style={{

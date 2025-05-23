@@ -1,5 +1,6 @@
 // utils/chatHandlers.js
 
+import { v4 as uuidv4 } from 'uuid';
 import api from '@utils/axios';
 import { encrypt } from '@utils/aes256';
 
@@ -28,6 +29,8 @@ export const handleSend = async ({
     selectedContact,
     user,
     socket,
+    setMessages,
+    setChatHistory,
     setInput,
     replyTo
 }) => {
@@ -39,16 +42,37 @@ export const handleSend = async ({
 
     // Create a message object similar to what's returned by backend (add timestamp)
     const now = new Date();
+
+    const clientId = uuidv4();
+
     const message = {
         from: user.username,
         to,
         text: encryptedText,
         timestamp: now.toISOString(),
-        ...(replyTo && replyTo._id ? { replyTo: replyTo._id } : {})
+        ...(replyTo && replyTo._id ? { replyTo: replyTo._id } : {}),
+        clientId
     };
 
     try {
         socket.emit('message', message);
+
+        // 👇 Optimistically add the message to the local state right away
+        if (typeof window !== "undefined" && typeof setChatHistory === "function" && typeof setMessages === "function" && selectedContact) {
+            const key = selectedContact.username || selectedContact;
+            setChatHistory(prev => ({
+                ...prev,
+                [key]: [...(prev[key] || []), {
+                    ...message,
+                    senderAvatar: user.avatar,
+                }],
+            }));
+            setMessages(prev => [...prev, {
+                ...message,
+                senderAvatar: user.avatar,
+            }]);
+        }
+
         setInput('');
     } catch (err) {
         console.error('Failed to send message', err);

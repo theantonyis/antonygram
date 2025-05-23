@@ -39,7 +39,7 @@ router.get('/:contactUsername', auth, async (req, res) => {
 
 // POST a new message
 router.post('/', async (req, res) => {
-    const { from, to, text, replyTo } = req.body;
+    const { from, to, text, replyTo, clientId} = req.body;
     if (!from || !to || !text) {
         return res.status(400).json({ message: 'Missing from, to or text' });
     }
@@ -47,11 +47,13 @@ router.post('/', async (req, res) => {
     try {
         const messageData = {from, to, text};
         if (replyTo) messageData.replyTo = replyTo;
+        if (clientId) messageData.clientId = clientId;
+
 
         const newMessage = new Message(messageData);
         await newMessage.save();
 
-        await newMessage.populate('replyTo', 'from text senderAvatar');
+        await newMessage.populate('replyTo', 'from text senderAvatar deleted');
 
         res.status(201).json(newMessage);
     } catch (err) {

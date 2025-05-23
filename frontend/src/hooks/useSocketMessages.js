@@ -8,17 +8,21 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
         if (!socket || !user) return;
 
         const messageHandler = (incoming) => {
-            const { from, to, text, timestamp, senderAvatar, replyTo} = incoming;
+            const {from, to, text, timestamp, senderAvatar, replyTo, clientId} = incoming;
             const contact = from === user.username ? to : from;
             const isOwn = from === user.username;
 
             let decryptedText;
-            try {
-                decryptedText = decrypt(text);
-            } catch (err) {
-                decryptedText = "[Could not decrypt message]";
-                console.error('Failed to decrypt message', err);
-                return;
+            if (!text || incoming.deleted) {
+                decryptedText = "";
+            } else {
+                try {
+                    decryptedText = decrypt(text);
+                } catch (err) {
+                    decryptedText = "[Could not decrypt message]";
+                    console.error('Failed to decrypt message', err);
+                    return;
+                }
             }
 
             // Look up replied-to message in local chat history (by _id)
@@ -47,26 +51,39 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
                 timestamp: timestamp || new Date(),
                 from,
                 to,
-                ...(incoming._id && { _id: incoming._id }),
-                ...(replyTo && { replyTo: replyToFull || replyTo })
+                ...(incoming._id && {_id: incoming._id}),
+                ...(replyTo && {replyTo: replyToFull || replyTo}),
+                ...(clientId && {clientId}),
             };
 
             setChatHistory(prev => ({
                 ...prev,
-                [contact]: [...(prev[contact] || []), formattedMessage],
+                [contact]: [
+                    ...(prev[contact] || []).filter(msg =>
+                        !(clientId && msg.clientId && msg.clientId === clientId)
+                    ),
+                    formattedMessage
+                ]
             }));
 
             if (contact === selectedContactRef.current?.username) {
                 setMessages(prev => {
-                    if (prev.some(msg =>
-                        msg.timestamp === formattedMessage.timestamp &&
-                        msg.from === formattedMessage.from &&
-                        msg.text === formattedMessage.text
-                    )) return prev;
-                    return [...prev, formattedMessage];
+                    // Remove any with matching clientId before adding
+                    const filtered = prev.filter(msg =>
+                        !(clientId && msg.clientId && msg.clientId === clientId)
+                    );
+                    // Standard duplicate detection as a fallback
+                    const alreadyExists = filtered.some(msg =>
+                        (msg._id && formattedMessage._id && msg._id === formattedMessage._id) ||
+                        (!msg._id && !formattedMessage._id &&
+                            msg.timestamp === formattedMessage.timestamp &&
+                            msg.from === formattedMessage.from &&
+                            msg.text === formattedMessage.text)
+                    );
+                    if (alreadyExists) return filtered;
+                    return [...filtered, formattedMessage];
                 });
             } else if (!isOwn) {
-                // Fire toast and update unread count
                 toast.info(`New message from ${from}: ${text}`);
                 if (setUnreadCounts) {
                     setUnreadCounts(prev => ({

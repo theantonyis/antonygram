@@ -18,12 +18,23 @@ export const hydrateMessages = (messages) => {
         replyTo: {
           _id: replyMsg._id,
           from: replyMsg.from,
-          // Decrypt reply message text as well
           text: replyMsg.text ? decrypt(replyMsg.text) : replyMsg.text,
           senderAvatar: replyMsg.senderAvatar,
+          deleted: replyMsg.deleted
         },
       };
     }
+
+    if (msg.replyTo && typeof msg.replyTo === 'object' && msg.replyTo.from) {
+      return {
+        ...msg,
+        text: decryptedText,
+        replyTo: {
+          ...msg.replyTo,
+        },
+      };
+    }
+
     return {
       ...msg,
       text: decryptedText,
