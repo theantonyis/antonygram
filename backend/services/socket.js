@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import {Message} from '../models/Message.js';
 import { Server } from'socket.io';
 import {User} from "../models/User.js";
+import { Group } from "../models/Group.js";
 
 export const onlineUsers = new Map();
 
@@ -36,7 +37,20 @@ export const initSocket = async (server, ioOptions) => {
             console.log(`${socket.username} joined room ${roomName}`);
         });
 
-        socket.on('message', async ({ to, text, replyTo }) => {
+        socket.on('joinGroup', async ({ groupId }) => {
+            if (groupId) {
+                socket.join(groupId);
+                try {
+                    const group = await Group.findById(groupId);
+                    const groupName = group ? group.name : '[Unknown Group]';
+                    console.log(`${socket.username} joined group "${groupName}" (${groupId})`);
+                } catch (err) {
+                    console.log(`${socket.username} joined group (failed to fetch name) (${groupId})`);
+                }
+            }
+        });
+
+        socket.on('message', async ({ to, text, replyTo, isGroup }) => {
             if (!to || !text) return;
 
             // Get sender doc for avatar
@@ -58,8 +72,12 @@ export const initSocket = async (server, ioOptions) => {
                 replyTo: newMessage.replyTo
             };
 
-            const roomName = [socket.username, to].sort().join('_');
-            io.to(roomName).emit('message', messageData);
+            if (isGroup) {
+                io.to(to).emit('message', messageData); // to = groupId
+            } else {
+                const roomName = [socket.username, to].sort().join('_');
+                io.to(roomName).emit('message', messageData);
+            }
         });
 
         socket.on('disconnect', async() => {
