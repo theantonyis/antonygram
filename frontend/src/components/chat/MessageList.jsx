@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import Avatar from '../common/Avatar';
-// ...other imports remain the same
 import { Trash2, CornerDownLeft, MoreVertical } from 'lucide-react';
+import { decrypt } from '@utils/aes256.js';
+import dayjs from 'dayjs';
 
 const AVATAR_SIZE = 36;
 
@@ -25,6 +26,9 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
         >
             {messages.map((msg, index) => {
                 if (msg.deleted) return null;
+
+                // Decrypt reply text if present
+                const replyText = msg.replyTo && msg.replyTo.text ? decrypt(msg.replyTo.text) : '';
 
                 const isOwn = msg.from === currentUser.username;
                 const avatar = msg.senderAvatar || (isOwn ? currentUser.avatar : null);
@@ -127,10 +131,10 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                         {/* Only show "message deleted" for deleted replies */}
                                         {msg.replyTo.deleted
                                             ? <span className="text-muted" style={{ fontStyle: 'italic' }}>Message deleted</span>
-                                            : (msg.replyTo.text
-                                                ? (msg.replyTo.text.length > 60
-                                                    ? msg.replyTo.text.slice(0, 60) + '…'
-                                                    : msg.replyTo.text)
+                                            : (replyText
+                                                ? (replyText.length > 60
+                                                    ? replyText.slice(0, 60) + '…'
+                                                    : replyText)
                                                 : '')
                                         }
                                     </span>
@@ -149,11 +153,7 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                             <div className="mb-1">{msg.text}</div>
                             <div className="text-end" style={{ fontSize: '0.83em' }}>
                                 <span className="text-secondary" style={{ opacity: 0.67 }}>
-                                    {new Date(msg.timestamp).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        hour12: false
-                                    })}
+                                    {dayjs(msg.timestamp).format('HH:mm')}
                                 </span>
                             </div>
                             {/* inside MessageList component, inside the return (replace ONLY the bubble actions and remove the MoreVertical/menu logic): */}

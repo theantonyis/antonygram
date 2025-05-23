@@ -25,6 +25,10 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
                 }
             }
 
+            if (!decryptedText && !incoming.deleted) {
+                return; // Skip empty messages
+            }
+
             // Look up replied-to message in local chat history (by _id)
             let replyToFull = null;
             if (replyTo && typeof replyTo === 'string') {
@@ -84,7 +88,10 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
                     return [...filtered, formattedMessage];
                 });
             } else if (!isOwn) {
-                toast.info(`New message from ${from}: ${text}`);
+                // Decrypt main message text
+                const decryptedText = msg.text ? decrypt(msg.text) : '';
+                // Decrypt reply text if present
+                const replyText = msg.replyTo && msg.replyTo.text ? decrypt(msg.replyTo.text) : '';
                 if (setUnreadCounts) {
                     setUnreadCounts(prev => ({
                         ...prev,

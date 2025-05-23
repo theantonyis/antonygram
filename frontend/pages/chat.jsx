@@ -19,6 +19,7 @@ import MessageInput from '@components/chat/MessageInput.jsx';
 import GroupChat from '@components/chat/GroupChat.jsx';
 import DeleteContactModal from '@components/chat/DeleteContactModal.jsx';
 import api from '@utils/axios.js';
+import { decrypt } from '@utils/aes256.js';
 
 import {
     handleLogout,
@@ -175,7 +176,8 @@ const Chat = () => {
         setSelectedContact
     });
 
-  const hydratedMessages = hydrateMessages(chatHistory[selectedContact?.username] || []);
+  const hydratedMessages = hydrateMessages(messages);
+  console.log(decrypt("HZ6UtqYV0PDHek0RRBc3SQ=="));
 
   useEffect(() => {
         selectedContactRef.current = selectedContact;
