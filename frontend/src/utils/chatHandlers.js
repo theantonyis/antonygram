@@ -3,6 +3,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import api from '@utils/axios';
 import { encrypt } from '@utils/aes256';
+import { toast } from 'react-toastify';
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -36,7 +37,17 @@ export const handleSend = async ({
 }) => {
     if (!input.trim() || !selectedContact) return;
 
-    const to = typeof selectedContact === 'string' ? selectedContact : selectedContact.username;
+    let to, isGroup = false;
+
+    // Distinguish between user and group object
+    if (selectedContact.groupId || selectedContact.groupName) {
+        // It's a group!
+        to = selectedContact.groupId || selectedContact.groupName;
+        isGroup = true;
+    } else {
+        // Fallback: user
+        to = typeof selectedContact === 'string' ? selectedContact : selectedContact.username;
+    }
 
     const encryptedText = encrypt(input.trim());
 
@@ -51,15 +62,21 @@ export const handleSend = async ({
         text: encryptedText,
         timestamp: now.toISOString(),
         ...(replyTo && replyTo._id ? { replyTo: replyTo._id } : {}),
-        clientId
+        clientId,
+        ...(isGroup ? { isGroup: true } : {})
     };
 
     try {
         socket.emit('message', message);
 
         // 👇 Optimistically add the message to the local state right away
-        if (typeof window !== "undefined" && typeof setChatHistory === "function" && typeof setMessages === "function" && selectedContact) {
-            const key = selectedContact.username || selectedContact;
+        if (
+            typeof window !== "undefined" &&
+            typeof setChatHistory === "function" &&
+            typeof setMessages === "function" &&
+            selectedContact
+        ) {
+            const key = selectedContact.groupId || selectedContact.groupName || selectedContact.username || selectedContact;
             setChatHistory(prev => ({
                 ...prev,
                 [key]: [...(prev[key] || []), {
@@ -203,10 +220,18 @@ export const selectContact = ({
 }) => {
     setSelectedContact(contact);
     if (socket && user && contact) {
-        const withUser = typeof contact === 'string' ? contact : contact.username;
-        socket.emit('joinRoom', { withUser });
+        let joinTarget;
+        if (contact.groupId || contact.groupName) {
+            joinTarget = contact.groupId || contact.groupName;
+            socket.emit('joinGroup', { groupId: joinTarget });
+        } else {
+            joinTarget = typeof contact === 'string' ? contact : contact.username;
+            socket.emit('joinRoom', { withUser: joinTarget });
+        }
+
     }
-    setMessages(chatHistory[contact?.username || contact] || []);
+    const key = contact.groupId || contact.groupName || contact.username || contact;
+    setMessages(chatHistory[key] || []);
 };
 
 /**
@@ -266,3 +291,85 @@ export const handleReplyMessage = ({
 }) => {
     setReplyTo(msg);
 };
+
+/**
+ * Handles adding a member to a group.
+ * @param {object} params
+ * @param {string} params.groupId - The group ID to add to.
+ * @param {string} params.username - The username of the member to add.
+ * @param {function} params.setGroup - State setter for the group (updates members).
+ */
+export const handleAddGroupMember = async ({
+    groupId,
+    username,
+    setGroup,
+}) => {
+    if (!username || !groupId) return;
+    try {
+        const res = await api.post(`${backendURL}/api/groups/${groupId}/add-member`, { username });
+        if (setGroup && typeof setGroup === 'function') {
+            setGroup(res.data.group);
+        }
+    } catch (error) {
+        console.error('Failed to add member:', error.response?.data || error.message);
+        alert(error.response?.data?.error || 'Failed to add member');
+    }
+};
+
+/**
+ * Handles removing a member from a group.
+ * @param {object} params
+ * @param {string} params.groupId - The group ID to remove from.
+ * @param {string} params.username - The username of the member to remove.
+ * @param {function} params.setGroup - State setter for the group (updates members).
+ */
+export const handleRemoveGroupMember = async ({
+    groupId,
+    username,
+    setGroup,
+}) => {
+    if (!username || !groupId) return;
+    try {
+        const res = await api.post(`${backendURL}/api/groups/${groupId}/remove-member`, { username });
+        if (setGroup && typeof setGroup === 'function') {
+            setGroup(res.data.group);
+        }
+    } catch (error) {
+        console.error('Failed to remove member:', error.response?.data || error.message);
+        alert(error.response?.data?.error || 'Failed to remove member');
+    }
+};
+
+export const handleDeleteGroup = async ({ groupId, setGroup, onGroupDeleted }) => {
+    try {
+        await api.delete(`/groups/${groupId}`);
+
+        // Reset local state
+        if (setGroup) setGroup(null);
+
+        if (onGroupDeleted) onGroupDeleted(groupId);
+
+        toast.success('Group deleted successfully');
+    } catch (err) {
+        console.error('Delete group error:', err);
+        alert(err.response?.data?.error || err.message || 'Failed to delete group');
+    }
+};
+
+export const handleGroupDeleted = ({
+   groupId,
+   selectedContact,
+   setGroups,
+   setSelectedContact
+}) => {
+    if (!groupId || typeof setGroups !== 'function') return;
+
+    setGroups(prev => prev.filter(g => g._id !== groupId));
+
+    if (selectedContact?.groupId === groupId && typeof setSelectedContact === 'function') {
+        setSelectedContact(null);
+    }
+};
+
+
+

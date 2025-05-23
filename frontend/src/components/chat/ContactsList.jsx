@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import api from "@utils/axios.js";
 import useGroups from '@hooks/useGroups.js';
 import GroupCreationForm from './GroupForm';
+import useSocket from '@hooks/useSocket';
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -19,13 +20,18 @@ const ContactsList = ({
     onAddContact,
     onSelectContact,
     onClearChat,
-    onDeleteContact
+    onDeleteContact,
+    refreshGroups,
+    onGroupDeleted,
 }) => {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [showPreview, setShowPreview] = useState(true); // control preview visibility
     const inputGroupRef = useRef(null);
     const [showGroupForm, setShowGroupForm] = useState(false);
     const [groups, setGroups] = useState([]);
+
+    const { refreshGroups: doRefreshGroups } = useGroups(setGroups);
+    const socket = useSocket();
 
     // Add state for searched user(s) not yet in contacts
     const [externalSearchResult, setExternalSearchResult] = useState(null);
@@ -38,8 +44,6 @@ const ContactsList = ({
                 contact.username.toLowerCase().includes(addContactInput.toLowerCase())
         )
         : [];
-
-    const { refreshGroups } = useGroups(setGroups);
 
     // EFFECT: Query backend if no local result, and input is present
     useEffect(() => {
@@ -66,6 +70,23 @@ const ContactsList = ({
         }
     }, [addContactInput, showPreview, previewResults.length]);
 
+    useEffect(() => {
+        if (!socket) return;
+        // Listen for group-related events
+        const refresh = () => doRefreshGroups();
+        socket.on('groupCreated', refresh);
+        socket.on('groupUpdated', refresh);
+        socket.on('groupDeleted', refresh);
+        socket.on('addedToGroup', refresh);
+        socket.on('removedFromGroup', refresh);
+        return () => {
+            socket.off('groupCreated', refresh);
+            socket.off('groupUpdated', refresh);
+            socket.off('groupDeleted', refresh);
+            socket.off('addedToGroup', refresh);
+            socket.off('removedFromGroup', refresh);
+        };
+    }, [socket, doRefreshGroups]);
 
     return (
         <div>
@@ -191,7 +212,19 @@ const ContactsList = ({
                                             )}
                                         </div>
                                         <small className="text-muted">
-                                            {group.members.length} members
+                                            <span className={isSelected ? 'fw-bold text-white' : ''}>
+                                                {(() => {
+                                                    let count = Array.isArray(group.members) ? group.members.length : 0;
+                                                    if (
+                                                        user &&
+                                                        Array.isArray(group.members) &&
+                                                        !group.members.some(m => (m.username || m) === user.username)
+                                                    ) {
+                                                        count += 1;
+                                                    }
+                                                    return `${count} member${count !== 1 ? 's' : ''}`;
+                                                })()}
+                                            </span>
                                         </small>
                                     </div>
                                 </div>
@@ -294,7 +327,8 @@ const ContactsList = ({
                 show={showGroupForm}
                 onHide={() => setShowGroupForm(false)}
                 contacts={contacts}
-                onGroupCreated={() => setShowGroupForm(false)}
+                onGroupCreated={doRefreshGroups}
+                user={user}
             />
         </div>
     );

@@ -18,16 +18,18 @@ import MessageList from '@components/chat/MessageList.jsx';
 import MessageInput from '@components/chat/MessageInput.jsx';
 import GroupChat from '@components/chat/GroupChat.jsx';
 import DeleteContactModal from '@components/chat/DeleteContactModal.jsx';
+import api from '@utils/axios.js';
 
 import {
-  handleLogout,
-  handleSend,
-  handleClear,
-  handleDeleteContact,
-  handleAddContact,
-  selectContact,
-  handleDeleteMessage,
-  handleReplyMessage
+    handleLogout,
+    handleSend,
+    handleClear,
+    handleDeleteContact,
+    handleAddContact,
+    selectContact,
+    handleDeleteMessage,
+    handleReplyMessage,
+    handleGroupDeleted
 } from '@utils/chatHandlers.js';
 
 const DEFAULT_AVATAR = '/def-avatar.png';
@@ -49,6 +51,8 @@ const Chat = () => {
     const [showContacts, setShowContacts] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState({});
     const [replyTo, setReplyTo] = useState(null);
+    const [selectedGroup, setSelectedGroup] = useState(null);
+    const [groups, setGroups] = useState([]);
 
     const selectedContactRef = useRef(selectedContact);
 
@@ -116,7 +120,7 @@ const Chat = () => {
       setSearch: setAddContactInput
     });
 
-  const onSelectContact = (contact) => {
+  const onSelectContact = async (contact) => {
       selectContact({
           contact,
           setSelectedContact,
@@ -125,6 +129,21 @@ const Chat = () => {
           socket,
           user
       });
+
+      if (!contact.groupId) {
+          setSelectedGroup(null);
+      }
+
+      if (contact.groupId) {
+          try {
+              const res = await api.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/groups/${contact.groupId}`);
+              setSelectedGroup(res.data); // Set the latest group object
+          } catch (err) {
+              setSelectedGroup(null); // Ensure reset if fails
+              console.error('Error fetching group info:', err);
+          }
+      }
+
       if (contact && setUnreadCounts) {
           setUnreadCounts(prev => ({
               ...prev,
@@ -146,6 +165,14 @@ const Chat = () => {
     handleReplyMessage({
         msg,
         setReplyTo,
+    });
+
+  const onGroupDeleted = (groupId) =>
+    handleGroupDeleted({
+        groupId,
+        selectedContact,
+        setGroups,
+        setSelectedContact
     });
 
   const hydratedMessages = hydrateMessages(chatHistory[selectedContact?.username] || []);
@@ -195,6 +222,7 @@ const Chat = () => {
               onDeleteContact={onDeleteContact}
               showContacts={showContacts}
               setShowContacts={setShowContacts}
+              onGroupDeleted={onGroupDeleted}
           >
           <ToastContainer position="top-right" autoClose={3000} />
           <div className="d-flex align-items-center justify-content-between py-2 px-3 d-flex d-md-none" style={{ marginTop: 8 }}>
@@ -225,7 +253,8 @@ const Chat = () => {
           {selectedContact ? (
               selectedContact.groupId ? (
                       <GroupChat
-                          group={selectedContact}
+                          group={selectedGroup}
+                          setGroup={setSelectedGroup}
                           messages={chatHistory[selectedContact.groupId] || []}
                           currentUser={user}
                           onSendMessage={text => {

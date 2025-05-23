@@ -15,7 +15,11 @@ export default function useAuthUser(router) {
         try {
             const token = tokenCookie.split('=')[1];
             const payload = JSON.parse(atob(token.split('.')[1]));
-            setUser({ username: payload.username, avatar: payload.avatar || DEFAULT_AVATAR });
+            setUser({
+                userId: payload.userId,                 // <-- ADD THIS
+                username: payload.username,
+                avatar: payload.avatar || DEFAULT_AVATAR
+            });
         } catch {
             setUser({ username: 'Guest', avatar: DEFAULT_AVATAR });
         }

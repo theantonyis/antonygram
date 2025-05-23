@@ -6,7 +6,7 @@ import api from '@utils/axios.js';
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 // You'll want to pass your contacts as a prop to this component!
-const GroupCreationForm = ({ show, onHide, contacts = [], onGroupCreated }) => {
+const GroupCreationForm = ({ show, onHide, contacts = [], onGroupCreated, user }) => {
     const [groupName, setGroupName] = useState('');
     const [selectedMembers, setSelectedMembers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -36,21 +36,26 @@ const GroupCreationForm = ({ show, onHide, contacts = [], onGroupCreated }) => {
         // Prepare only IDs for backend
         const memberIds = selectedMembers.map(m => m._id);
 
-        const formData = new FormData();
-        formData.append('name', groupName);
-        memberIds.forEach(id => formData.append('members[]', id));
-        if (avatar) formData.append('avatar', avatar);
+        if (user && !memberIds.includes(user._id)) {
+            memberIds.push(user._id);
+        }
+
+        const data = {
+            name: groupName,
+            members: memberIds,
+            // Omit avatar if not set or leave as undefined
+        };
 
         try {
             // Adjust the URL if needed for your API
-            await api.post(`${backendURL}/api/groups`, formData, {
+            const resp = await api.post(`${backendURL}/api/groups`, data, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'application/json'
                 }
             });
+            console.log("Created group:", resp.data);
             setGroupName('');
             setSelectedMembers([]);
-            setAvatar(null);
             if (onGroupCreated) onGroupCreated();
             onHide();
         } catch (err) {
@@ -77,15 +82,6 @@ const GroupCreationForm = ({ show, onHide, contacts = [], onGroupCreated }) => {
                             onChange={e => setGroupName(e.target.value)}
                             required
                             placeholder="Enter group name"
-                        />
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                        <Form.Label>Group Avatar (optional)</Form.Label>
-                        <Form.Control
-                            type="file"
-                            accept="image/*"
-                            onChange={e => setAvatar(e.target.files[0])}
                         />
                     </Form.Group>
 

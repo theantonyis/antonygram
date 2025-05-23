@@ -2,7 +2,7 @@
 import {Col, Offcanvas, Row} from "react-bootstrap";
 import ContactsList from "@components/chat/ContactsList";
 
-const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, onlineUsers, addContactInput, setAddContactInput, onAddContact, onClearChat, onDeleteContact, unreadCounts, showContacts, setShowContacts, children}) => {
+const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, onlineUsers, addContactInput, setAddContactInput, onAddContact, onClearChat, onDeleteContact, unreadCounts, showContacts, setShowContacts, onGroupDeleted, children}) => {
     return (
         <Row className="flex-grow-1" style={{ flex: 1, minHeight: 0, height: "100%" }}>
             <Col xs={12} md={4} lg={3} className="d-none d-md-block">
@@ -13,6 +13,7 @@ const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, onlin
                     onlineUsers={onlineUsers}
                     addContactInput={addContactInput}
                     setAddContactInput={setAddContactInput}
+                    onGroupDeleted={onGroupDeleted}
                     onAddContact={onAddContact}
                     unreadCounts={unreadCounts}
                     onSelectContact={onSelectContact}
@@ -37,6 +38,7 @@ const ChatLayout = ({user, contactsList, selectedContact, onSelectContact, onlin
                         onlineUsers={onlineUsers}
                         addContactInput={addContactInput}
                         setAddContactInput={setAddContactInput}
+                        onGroupDeleted={onGroupDeleted}
                         onAddContact={onAddContact}
                         onSelectContact={(c) => {
                             onSelectContact(c);
