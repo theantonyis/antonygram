@@ -260,25 +260,52 @@ export const handleDeleteMessage = async ({
         console.error('Failed to delete message in backend', err);
     }
 
+    const key = selectedContact.groupId || selectedContact.username || selectedContact;
+
     setChatHistory(prev => {
-        const key = selectedContact.username || selectedContact;
         const current = prev[key] || [];
         return {
             ...prev,
-            [key]: current.map(msg =>
-                msg._id === msgToDelete._id
-                    ? { ...msg, deleted: true, text: '' }
-                    : msg
-            ),
+            [key]: current.map(msg => {
+                if (msg._id === msgToDelete._id) {
+                    return { ...msg, deleted: true, text: '' };
+                }
+
+                // Also update replies to this message
+                if (msg.replyTo && msg.replyTo._id === msgToDelete._id) {
+                    return {
+                        ...msg,
+                        replyTo: {
+                            ...msg.replyTo,
+                            deleted: true,
+                            text: ''
+                        }
+                    };
+                }
+                return msg;
+            })
         };
     });
 
+    // Update current messages view with similar logic
     setMessages(prev =>
-        prev.map(msg =>
-            msg._id === msgToDelete._id
-                ? { ...msg, deleted: true, text: '' }
-                : msg
-        )
+        prev.map(msg => {
+            if (msg._id === msgToDelete._id) {
+                return { ...msg, deleted: true, text: '' };
+            }
+
+            if (msg.replyTo && msg.replyTo._id === msgToDelete._id) {
+                return {
+                    ...msg,
+                    replyTo: {
+                        ...msg.replyTo,
+                        deleted: true,
+                        text: ''
+                    }
+                };
+            }
+            return msg;
+        })
     );
 };
 

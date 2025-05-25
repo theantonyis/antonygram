@@ -8,23 +8,30 @@ export default function useChatHistory(selectedContact, chatHistory, setMessages
         if (!selectedContact) return;
 
         // Use username string for lookup regardless of selectedContact type
-        const username = typeof selectedContact === 'string'
-            ? selectedContact
-            : selectedContact.username;
+        const contactKey = selectedContact.groupId ||
+            (typeof selectedContact === 'string' ? selectedContact : selectedContact.username);
 
-        if (chatHistory[username]) {
-            setMessages(chatHistory[username]);
+
+        if (chatHistory[contactKey]) {
+            setMessages(chatHistory[contactKey]);
             return;
         }
 
         const fetchMessages = async () => {
             try {
-                const res = await api.get(`${backendURL}/api/messages/${username}`);
-                console.log('Fetched messages:', res.data.messages);
-
-                // Don't try to get avatars for now (avoid ContactsList problem)
-                setChatHistory(prev => ({ ...prev, [username]: res.data.messages }));
-                setMessages(res.data.messages);
+                // For groups, use a different endpoint
+                if (selectedContact.groupId) {
+                    // Create group messages endpoint
+                    const res = await api.get(`${backendURL}/api/messages/groups/${selectedContact.groupId}`);
+                    setChatHistory(prev => ({ ...prev, [contactKey]: res.data.messages || [] }));
+                    setMessages(res.data.messages || []);
+                } else {
+                    // For direct messages, use the existing endpoint
+                    const username = typeof selectedContact === 'string' ? selectedContact : selectedContact.username;
+                    const res = await api.get(`${backendURL}/api/messages/${username}`);
+                    setChatHistory(prev => ({ ...prev, [contactKey]: res.data.messages }));
+                    setMessages(res.data.messages);
+                }
             } catch (err) {
                 console.error('Failed to fetch messages', err);
                 setMessages([]);

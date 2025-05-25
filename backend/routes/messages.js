@@ -107,4 +107,23 @@ router.delete('/:contactUsername', auth, async (req, res) => {
     }
 });
 
+// GET group messages
+router.get('/groups/:groupId', auth, async (req, res) => {
+    const groupId = req.params.groupId;
+
+    try {
+        // Get messages for this group
+        const messages = await Message.find({
+            to: groupId,
+            isGroup: true
+        })
+            .sort({ timestamp: 1 })
+            .populate('replyTo', 'from text senderAvatar deleted');
+
+        res.json({ messages });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch group messages' });
+    }
+});
+
 export default router;

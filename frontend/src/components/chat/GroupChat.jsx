@@ -31,27 +31,37 @@ const GroupChat = ({
 
   const addMember = async (e) => {
     e.preventDefault();
-    await handleAddGroupMember({
-      groupId: group._id,
-      username: newMember,
-      setGroup,
-    });
+      try {
+          const result = await handleAddGroupMember({
+              groupId: group._id,
+              username: newMember,
+              setGroup,
+          });
 
-      if (result && result.success && typeof refreshGroups === 'function') {
-          refreshGroups();
+          // Call refreshGroups if it exists
+          if (typeof refreshGroups === 'function') {
+              refreshGroups();
+          }
+          setNewMember('');
+      } catch (err) {
+          console.error("Failed to add member:", err);
       }
-    setNewMember('');
   };
 
   const removeMember = async (username) => {
-    await handleRemoveGroupMember({
-      groupId: group._id,
-      username,
-      setGroup,
-    });
+      try {
+          const result = await handleRemoveGroupMember({
+              groupId: group._id,
+              username: newMember,
+              setGroup,
+          });
 
-      if (result && result.success && typeof refreshGroups === 'function') {
-          refreshGroups();
+          // Call refreshGroups if it exists
+          if (typeof refreshGroups === 'function') {
+              refreshGroups();
+          }
+      } catch (err) {
+          console.error("Failed to remove member:", err);
       }
   };
 
@@ -123,7 +133,11 @@ const GroupChat = ({
           <MessageList
               messages={decryptedMessages}
               currentUser={currentUser}
-              onDeleteMessage={onDeleteMessage}
+              onDeleteMessage={(msg) => {
+                  if (onDeleteMessage) {
+                      onDeleteMessage(msg, group._id);
+                  }
+              }}
               onReplyMessage={onReplyMessage}
           />
         </div>

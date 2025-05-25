@@ -125,7 +125,6 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                         fontSize: '0.93em',
                                     }}>
                                         {msg.replyTo.deleted ? 'Message was deleted' :
-                                            msg.replyTo._text || // First check for temporary text
                                             (msg.replyTo.text && typeof msg.replyTo.text === 'string' ?
                                                 (msg.replyTo.text.startsWith('U2FsdGVk') ?
                                                     decrypt(msg.replyTo.text) : msg.replyTo.text)
