@@ -165,7 +165,7 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
-                                    zIndex: 2
+                                    zIndex: 10
                                 }}
                                 tabIndex={-1}
                                 onBlur={() => setOpenMenuIdx(null)}
@@ -185,7 +185,8 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                         style={{
                                             position: 'absolute',
                                             top: 26,
-                                            right: 0,
+                                            right: isOwn ? 0 : 'auto',  // Position dropdown based on message ownership
+                                            left: isOwn ? 'auto' : 0,
                                             background: '#fff',
                                             boxShadow: '0 2px 12px rgba(60,80,110,.13)',
                                             borderRadius: 7,

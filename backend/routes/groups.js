@@ -5,16 +5,41 @@ import auth from '../middleware/auth.js';
 import { User } from '../models/User.js';
 
 // Create a new group
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
-        let { name, members,avatar } = req.body;
+        let { name, members, avatar } = req.body;
 
-        if (typeof members === 'string') members = [members]; // Single member selected
-        if (!members) members = [];
+        // Ensure members is an array and filter out null/undefined values
+        if (typeof members === 'string') {
+            members = [members]; // Single member selected
+        } else if (!Array.isArray(members)) {
+            members = [];
+        }
+
+        // Filter out null, undefined or invalid values
+        members = members.filter(member => member);
+
+        // Always add the current user creating the group as a member
+        const userId = req.user.userId;
+
+        // Add current user only if not already in the list
+        const userAlreadyIncluded = members.some(memberId =>
+                memberId && (
+                    memberId === userId ||
+                    memberId.toString() === userId
+                )
+        );
+
+        if (!userAlreadyIncluded) {
+            members.push(userId);
+        }
 
         const group = new Group({ name, members, avatar });
         await group.save();
-        res.status(201).json(group);
+
+        // Return the populated group to the client
+        const populatedGroup = await Group.findById(group._id).populate('members', 'username email avatar');
+        res.status(201).json(populatedGroup);
     } catch (err) {
         console.error('Create group error:', err);
         res.status(400).json({ error: err.message });
@@ -23,9 +48,14 @@ router.post('/', async (req, res) => {
 
 // Get all groups
 router.get('/', auth, async (req, res) => {
-    const userId = req.user.id;
-    const groups = await Group.find({members: userId}).populate('members', 'username email');
-    res.json(groups);
+    try {
+        const userId = req.user.userId;
+        const groups = await Group.find({members: userId}).populate('members', 'username email avatar');
+        res.json(groups);
+    } catch (err) {
+        console.error('Get groups error:', err);
+        res.status(500).json({ error: 'Server error', details: err.message });
+    }
 });
 
 router.get('/:groupId', auth, async (req, res) => {
@@ -47,7 +77,11 @@ router.post('/:groupId/add-member', auth, async (req, res) => {
     const { groupId } = req.params;
 
     try {
-        const userToAdd = await User.findOne({ username });
+        if (!username || !username.trim()) {
+            return res.status(400).json({ error: 'Username is required' });
+        }
+
+        const userToAdd = await User.findOne({ username: username.trim() });
         if (!userToAdd) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -57,8 +91,9 @@ router.post('/:groupId/add-member', auth, async (req, res) => {
             return res.status(404).json({ error: 'Group not found' });
         }
 
-        // Prevent duplicate members
-        if (group.members.some(memberId => memberId.equals(userToAdd._id))) {
+        // Prevent duplicate members - safely check with proper null handling
+        if (group.members && group.members.some(memberId =>
+            memberId && userToAdd._id && memberId.equals(userToAdd._id))) {
             return res.status(400).json({ error: 'User is already a group member' });
         }
 
@@ -88,12 +123,18 @@ router.post('/:groupId/remove-member', auth, async (req, res) => {
             return res.status(404).json({ error: 'Group not found' });
         }
 
-        // Check if the user is a member of the group
-        if (!group.members.some(memberId => memberId.equals(userToRemove._id))) {
+        // Check if the user is a member of the group - with null checking
+        const isMember = group.members && group.members.some(memberId =>
+            memberId && userToRemove._id && memberId.equals(userToRemove._id)
+        );
+
+        if (!isMember) {
             return res.status(400).json({ error: 'User is not a group member' });
         }
 
-        group.members = group.members.filter(memberId => !memberId.equals(userToRemove._id));
+        group.members = group.members.filter(memberId =>
+            memberId && userToRemove._id && !memberId.equals(userToRemove._id)
+        );
         await group.save();
 
         // Return updated group with populated members
@@ -114,13 +155,16 @@ router.delete('/:groupId', auth, async (req, res) => {
             return res.status(404).json({ error: 'Group not found' });
         }
 
-        // Optional: ensure the user is a member or admin before deleting
-        if (!group.members.some(memberId => memberId.equals(req.user.id))) {
+        // Safe check for user membership with null handling
+        const isMember = group.members && group.members.some(memberId =>
+            memberId && req.user && req.user.userId && memberId.equals(req.user.userId)
+        );
+
+        if (!isMember) {
             return res.status(403).json({ error: 'Not authorized to delete this group' });
         }
 
         await Group.deleteOne({ _id: groupId });
-
         res.json({ success: true, message: 'Group deleted successfully' });
     } catch (err) {
         console.error('Delete group error:', err);

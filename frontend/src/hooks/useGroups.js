@@ -1,4 +1,4 @@
-import { useCallback, useEffect , useRef} from "react";
+import { useCallback, useEffect , useRef, useState } from "react";
 import api from "@utils/axios";
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -8,7 +8,8 @@ const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
  *
  * @param {function} setGroups - Function to set the groups array in your component.
  */
-export default function useGroups(setGroups) {
+export default function useGroups() {
+    const [groups, setGroups] = useState([]);
     const fetchingRef = useRef(false);
 
     const refreshGroups = useCallback(async () => {
@@ -30,5 +31,5 @@ export default function useGroups(setGroups) {
     }, [refreshGroups]);
 
     // Return the refresh function
-    return { refreshGroups };
+    return { groups, refreshGroups };
 }

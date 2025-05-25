@@ -12,6 +12,7 @@ import useOnlineUsers from '@hooks/useOnlineUsers.js';
 import useContacts from '@hooks/useContacts.js';
 import useSocketMessages from '@hooks/useSocketMessages.js';
 import useChatHistory from '@hooks/useChatHistory.js';
+import useGroups from "@hooks/useGroups.js";
 import ChatLayout from "@components/layout/ChatLayout.jsx";
 import ChatHeader from '@components/chat/ChatHeader.jsx';
 import MessageList from '@components/chat/MessageList.jsx';
@@ -53,7 +54,7 @@ const Chat = () => {
     const [unreadCounts, setUnreadCounts] = useState({});
     const [replyTo, setReplyTo] = useState(null);
     const [selectedGroup, setSelectedGroup] = useState(null);
-    const [groups, setGroups] = useState([]);
+    const { groups, refreshGroups } = useGroups();
 
     const selectedContactRef = useRef(selectedContact);
 
@@ -145,12 +146,10 @@ const Chat = () => {
           }
       }
 
-      if (contact && setUnreadCounts) {
-          setUnreadCounts(prev => ({
-              ...prev,
-              [contact.username]: 0,
-          }));
-      }
+      setUnreadCounts(prev => ({
+          ...prev,
+          [contact.username || contact.groupId]: 0 // Reset both user and group unread counts
+      }));
   };
 
     // Replace onDeleteMessage to use the cascade function instead:
@@ -224,6 +223,7 @@ const Chat = () => {
               showContacts={showContacts}
               setShowContacts={setShowContacts}
               onGroupDeleted={onGroupDeleted}
+              refreshGroups={refreshGroups}
           >
           <ToastContainer position="top-right" autoClose={3000} />
           <div className="d-flex align-items-center justify-content-between py-2 px-3 d-flex d-md-none" style={{ marginTop: 8 }}>
@@ -257,6 +257,7 @@ const Chat = () => {
                           group={selectedGroup}
                           setGroup={setSelectedGroup}
                           messages={chatHistory[selectedContact.groupId] || []}
+                          refreshGroups={refreshGroups}
                           currentUser={user}
                           onSendMessage={text => {
                               handleSend({

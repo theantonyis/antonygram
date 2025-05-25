@@ -28,9 +28,8 @@ const ContactsList = ({
     const [showPreview, setShowPreview] = useState(true); // control preview visibility
     const inputGroupRef = useRef(null);
     const [showGroupForm, setShowGroupForm] = useState(false);
-    const [groups, setGroups] = useState([]);
 
-    const { refreshGroups: doRefreshGroups } = useGroups(setGroups);
+    const { groups, refreshGroups: doRefreshGroups } = useGroups();
     const socket = useSocket();
 
     // Add state for searched user(s) not yet in contacts
@@ -213,17 +212,8 @@ const ContactsList = ({
                                         </div>
                                         <small className="text-muted">
                                             <span className={isSelected ? 'fw-bold text-white' : ''}>
-                                                {(() => {
-                                                    let count = Array.isArray(group.members) ? group.members.length : 0;
-                                                    if (
-                                                        user &&
-                                                        Array.isArray(group.members) &&
-                                                        !group.members.some(m => (m.username || m) === user.username)
-                                                    ) {
-                                                        count += 1;
-                                                    }
-                                                    return `${count} member${count !== 1 ? 's' : ''}`;
-                                                })()}
+                                                {Array.isArray(group.members) ? group.members.length : 0} member
+                                                {(!Array.isArray(group.members) || group.members.length !== 1) ? 's' : ''}
                                             </span>
                                         </small>
                                     </div>

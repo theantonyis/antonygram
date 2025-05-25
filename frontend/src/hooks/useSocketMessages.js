@@ -52,10 +52,15 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
                 });
             } else if (!isOwn) {
                 // Update unread counts for incoming messages
-                setUnreadCounts(prev => ({
-                    ...prev,
-                    [contact]: (prev[contact] || 0) + 1
-                }));
+                setUnreadCounts(prev => {
+                    // For group messages, use the "to" field (groupId)
+                    // For direct messages, use the "from" field (username)
+                    const contactIdentifier = isGroup ? to : from;
+                    return {
+                        ...prev,
+                        [contactIdentifier]: (prev[contactIdentifier] || 0) + 1
+                    };
+                });
             }
         };
 

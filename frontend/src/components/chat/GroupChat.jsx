@@ -1,58 +1,72 @@
 import React, { useState } from 'react';
 import Avatar from '../common/Avatar';
-import { Users } from 'lucide-react';
+import { Users, UserPlus, UserMinus, Trash2 } from 'lucide-react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import { Row, Col, Button, InputGroup, FormControl, Modal } from 'react-bootstrap';
-import {handleAddGroupMember, handleDeleteGroup, handleRemoveGroupMember} from '@utils/chatHandlers';
+import { Row, Col, Button, Form, Modal, ListGroup, Badge } from 'react-bootstrap';
+import { handleAddGroupMember, handleDeleteGroup, handleRemoveGroupMember } from '@utils/chatHandlers';
 import { decrypt } from "@utils/aes256.js";
 
 const AVATAR_SIZE = 38;
 
 const GroupChat = ({
-  group,
-  messages,
-  currentUser,
-  onSendMessage,
-  onDeleteMessage,
-  onReplyMessage,
-  replyTo,
-  onCancelReply,
-  setGroup,
-  onGroupDeleted
-}) => {
-  const [memberName, setMemberName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showMembers, setShowMembers] = useState(false);
+                     group,
+                     messages,
+                     currentUser,
+                     onSendMessage,
+                     onDeleteMessage,
+                     onReplyMessage,
+                     replyTo,
+                     onCancelReply,
+                     setGroup,
+                     onGroupDeleted,
+                     refreshGroups,
+                   }) => {
   const [showGroupModal, setShowGroupModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [newMember, setNewMember] = useState('');
 
   if (!group) {
     return <div className="text-center text-muted py-5">Select or create a group to start chatting.</div>;
   }
 
-  // Used for demo: Only show member controls if the current user is a member
-  const isMember = Array.isArray(group.members)
-      ? group.members.some(m => (m.username || m) === currentUser?.username)
-      : false;
+  const addMember = async (e) => {
+    e.preventDefault();
+    await handleAddGroupMember({
+      groupId: group._id,
+      username: newMember,
+      setGroup,
+    });
 
-  // Determine member count robustly (include current user if not present)
-  let memberCount = Array.isArray(group.members) ? group.members.length : 0;
-  if (
-    currentUser &&
-    Array.isArray(group.members) &&
-    !group.members.some(m => (m.username || m) === currentUser.username)
-  ) {
-    memberCount += 1;
-  }
-
-  const handleAdd = async () => {
-    if (!memberName.trim()) return;
-    setLoading(true);
-    await handleAddGroupMember({ groupId: group._id, username: memberName.trim(), setGroup });
-    setMemberName('');
-    setLoading(false);
+      if (result && result.success && typeof refreshGroups === 'function') {
+          refreshGroups();
+      }
+    setNewMember('');
   };
+
+  const removeMember = async (username) => {
+    await handleRemoveGroupMember({
+      groupId: group._id,
+      username,
+      setGroup,
+    });
+
+      if (result && result.success && typeof refreshGroups === 'function') {
+          refreshGroups();
+      }
+  };
+
+  const deleteGroup = async () => {
+    await handleDeleteGroup({
+      groupId: group._id,
+      setGroup,
+      onGroupDeleted
+    });
+    setShowGroupModal(false);
+  };
+
+  const members = Array.isArray(group?.members)
+      ? group.members
+      : [];
 
   const decryptedMessages = Array.isArray(messages)
       ? messages.map(msg => ({
@@ -70,205 +84,136 @@ const GroupChat = ({
       : [];
 
   return (
-    <div className="d-flex flex-column h-100">
-      {/* Header */}
-      <Row
-          className="align-items-center border-bottom p-3 mb-2"
-          style={{ background: "#fff", minHeight: 70, cursor: "pointer" }}
-          onClick={() => setShowGroupModal(true)}
-      >
-      <Col xs="auto">
-          <Avatar
-            avatar={group.avatar}
-            fallbackIcon={<Users size={30} />}
-            size={AVATAR_SIZE}
+      <div className="d-flex flex-column h-100">
+        {/* Header */}
+        <Row
+            className="align-items-center border-bottom p-2 px-3 sticky-top bg-white"
+            style={{
+              cursor: "pointer",
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              zIndex: 100,
+              marginLeft: 0,
+              marginRight: 0,
+              width: '100%'
+            }}
+            onClick={() => setShowGroupModal(true)}
+        >
+          <Col xs="auto" className="ps-1">
+            <Avatar
+                avatar={group.avatar}
+                fallbackIcon={<Users size={30} />}
+                size={AVATAR_SIZE}
+            />
+          </Col>
+          <Col>
+            <h5 className="mb-0 text-truncate">
+              {group?.name || 'Group Chat'}
+            </h5>
+            <small className="text-muted d-flex align-items-center">
+              <span className="me-1">Tap for info</span>
+                <Badge bg="success" style={{ fontSize: '0.85em', padding: '0.3em 0.7em' }}>
+                    {members.length} member{members.length !== 1 ? 's' : ''}
+                </Badge>
+            </small>
+          </Col>
+        </Row>
+
+        {/* Messages */}
+        <div className="flex-grow-1 overflow-auto d-flex flex-column justify-content-end px-0">
+          <MessageList
+              messages={decryptedMessages}
+              currentUser={currentUser}
+              onDeleteMessage={onDeleteMessage}
+              onReplyMessage={onReplyMessage}
           />
-        </Col>
-        <Col>
-          <strong className="d-block">{group.name}</strong>
-          <small className="text-muted">
-            {memberCount} member{memberCount !== 1 ? 's' : ''}
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              {showMembers && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: '120%',
-                    zIndex: 1050,
-                    minWidth: 180,
-                    background: '#fff',
-                    border: '1px solid #ddd',
-                    borderRadius: 8,
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                    padding: 10,
-                    fontSize: 13,
-                  }}
-                  onMouseLeave={() => setShowMembers(false)}
-                >
-                  <div className="fw-bold mb-2" style={{fontSize: 14}}>Group Members</div>
-                  {Array.isArray(group.members) && group.members.length > 0 ? (
-                    <ul className="list-unstyled mb-0">
-                      {group.members.map((m, idx) => (
-                        <li key={m._id || m.id || idx} className="mb-1 d-flex align-items-center">
-                          <span className="fw-semibold small">{m.username || m}</span>
-                          {m.email && <span className="text-muted small ms-2">{m.email}</span>}
-                        </li>
-                      ))}
-                      {/* Show current user if not in members */}
-                      {!group.members.some(m => (m.username || m) === currentUser.username) && (
-                        <li className="mb-1 d-flex align-items-center">
-                          <span className="fw-semibold small">{currentUser.username}</span>
-                          {currentUser.email && <span className="text-muted small ms-2">{currentUser.email}</span>}
-                        </li>
-                      )}
-                    </ul>
-                  ) : (
-                    <div className="text-muted small">No members found.</div>
-                  )}
-                </div>
-              )}
+        </div>
+
+        {/* Composer */}
+        <div className="p-3 border-top bg-white chat-input-wrapper">
+          <MessageInput
+              onSend={onSendMessage}
+              replyTo={replyTo}
+              onCancelReply={onCancelReply}
+          />
+        </div>
+
+        {/* Group Info Modal */}
+        <Modal show={showGroupModal} onHide={() => setShowGroupModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Group Information</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className="text-center mb-4">
+              <Avatar
+                  avatar={group?.avatar}
+                  fallbackIcon={<Users size={48} />}
+                  size={80}
+                  className="mb-2"
+              />
+              <h4>{group?.name}</h4>
             </div>
-          </small>
-        </Col>
-      </Row>
 
-      <Modal show={showGroupModal} onHide={() => setShowGroupModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Manage Group: {group.name}</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-          <div className="mb-3">
-            <strong className="d-block mb-2">Members ({memberCount}):</strong>
-            <ul className="list-group list-group-flush">
-              {Array.isArray(group.members) && group.members.length > 0 ? (
-                  group.members.map((m, idx) => {
-                    const username = m.username || m;
-                    const email = m.email;
-                    return (
-                        <li
-                            key={m._id || m.id || idx}
-                            className="list-group-item d-flex justify-content-between align-items-center px-2 py-1"
-                        >
-                          <div>
-                            <span className="fw-semibold">{username}</span>
-                            {email && <span className="text-muted small ms-2">{email}</span>}
-                          </div>
-                          {isMember && username !== currentUser.username && (
-                              <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={async () => {
-                                    setLoading(true);
-                                    await handleRemoveGroupMember({ groupId: group._id, username, setGroup });
-                                    setLoading(false);
-                                  }}
-                              >
-                                Remove
-                              </Button>
-                          )}
-                        </li>
-                    );
-                  })
-              ) : (
-                  <li className="list-group-item text-muted py-1 px-2">No members found.</li>
-              )}
-            </ul>
-          </div>
-
-          {isMember && (
-              <InputGroup className="mb-3" size="sm">
-                <FormControl
-                    placeholder="Add member (username)"
-                    value={memberName}
-                    onChange={e => setMemberName(e.target.value)}
-                    disabled={loading}
+            {/* Add member form */}
+            <Form onSubmit={addMember} className="mb-4">
+              <Form.Group className="d-flex">
+                <Form.Control
+                    type="text"
+                    placeholder="Add member by username"
+                    value={newMember}
+                    onChange={(e) => setNewMember(e.target.value)}
+                    className="me-2"
                 />
-                <Button
-                    variant="success"
-                    onClick={handleAdd}
-                    disabled={loading || !memberName.trim()}
-                >
-                  Add
+                <Button type="submit" variant="outline-primary">
+                  <UserPlus size={18} />
                 </Button>
-              </InputGroup>
-          )}
-        </Modal.Body>
+              </Form.Group>
+            </Form>
 
-        {isMember && (
-            <Modal.Footer>
-              <Button
-                  variant="outline-danger"
-                  size="sm"
-                  onClick={() => {
-                    handleDeleteGroup({
-                      groupId: group._id,
-                      setGroup,
-                      onGroupDeleted: () => {
-                        setShowDeleteModal(false);
-                        onGroupDeleted?.(group._id); // ✅ callback to parent
-                      },
-                    });
-                  }}
-              >
-                Delete Group
-              </Button>
-            </Modal.Footer>
-        )}
-      </Modal>
+            <h6 className="mb-2">Members</h6>
+            <ListGroup className="mb-4">
+              {members.map((member) => {
+                const username = member.username || member;
+                const isCurrentUser = username === currentUser?.username;
 
-      {/* Messages */}
-      <div className="flex-grow-1 d-flex flex-column h-100" style={{ minHeight: 0 }}>
-        <MessageList
-          messages={decryptedMessages}
-          currentUser={currentUser}
-          onDeleteMessage={onDeleteMessage}
-          onReplyMessage={onReplyMessage}
-        />
+                return (
+                    <ListGroup.Item
+                        key={username}
+                        className="d-flex justify-content-between align-items-center"
+                    >
+                      <div>
+                        {username} {isCurrentUser && <Badge bg="secondary">you</Badge>}
+                      </div>
+                      {!isCurrentUser && (
+                          <Button
+                              size="sm"
+                              variant="outline-danger"
+                              onClick={() => removeMember(username)}
+                          >
+                            <UserMinus size={16} />
+                          </Button>
+                      )}
+                    </ListGroup.Item>
+                );
+              })}
+            </ListGroup>
+          </Modal.Body>
+          <Modal.Footer className="justify-content-between">
+            <Button
+                variant="danger"
+                onClick={deleteGroup}
+            >
+              <Trash2 size={16} className="me-2" />
+              Delete Group
+            </Button>
+            <Button
+                variant="secondary"
+                onClick={() => setShowGroupModal(false)}
+            >
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </div>
-
-      {/* Composer */}
-      <div className="p-3 border-top bg-white" style={{ marginTop: "auto" }}>
-        <MessageInput
-          onSend={onSendMessage}
-          replyTo={replyTo}
-          onCancelReply={onCancelReply}
-        />
-      </div>
-
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Delete Group</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body style={{ overflowY: 'auto', maxHeight: '60vh', paddingBottom: '1rem' }}>
-          Are you sure you want to delete the group <strong>{group?.name}</strong>? This action cannot be undone.
-        </Modal.Body>
-
-        <Modal.Footer style={{ flexShrink: 0 }}>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button
-              variant="danger"
-              onClick={() => {
-                handleDeleteGroup({
-                  groupId: group._id,
-                  setGroup,
-                  onGroupDeleted: () => {
-                    setShowDeleteModal(false);
-                    onGroupDeleted?.(group._id);
-                  },
-                });
-              }}
-          >
-            Delete Group
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </div>
-
   );
 };
 
