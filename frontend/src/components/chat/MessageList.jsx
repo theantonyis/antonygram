@@ -125,9 +125,11 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                         fontSize: '0.93em',
                                     }}>
                                         {msg.replyTo.deleted ? 'Message was deleted' :
-                                            (typeof msg.replyTo.text === 'string' &&
-                                            msg.replyTo.text.startsWith('U2FsdGVk') ?
-                                                decrypt(msg.replyTo.text) : msg.replyTo.text)}
+                                            msg.replyTo._text || // First check for temporary text
+                                            (msg.replyTo.text && typeof msg.replyTo.text === 'string' ?
+                                                (msg.replyTo.text.startsWith('U2FsdGVk') ?
+                                                    decrypt(msg.replyTo.text) : msg.replyTo.text)
+                                                : '')}
                                     </span>
                                 </div>
                             )}
@@ -142,9 +144,10 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                 {msg.from}
                             </div>
                             <div className="mb-1">
-                                {msg._text ||
+                                {msg._text || // For temporary messages
                                     (msg.text && typeof msg.text === 'string' ?
-                                        (msg.text.startsWith('U2FsdGVk') ? decrypt(msg.text) : msg.text)
+                                        (msg.text.startsWith('U2FsdGVk') ?
+                                            decrypt(msg.text) : msg.text)
                                         : '')}
                             </div>
                             <div className="text-end" style={{ fontSize: '0.83em' }}>
@@ -156,16 +159,24 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                             <div
                                 style={{
                                     position: 'absolute',
-                                    top: 8,
-                                    right: 10,
-                                    zIndex: 3,
+                                    top: '2px',
+                                    right: isOwn ? '-30px' : 'auto',
+                                    left: isOwn ? 'auto' : '-30px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    zIndex: 2
                                 }}
                                 tabIndex={-1}
                                 onBlur={() => setOpenMenuIdx(null)}
                             >
                                 <MoreVertical
-                                    size={19}
-                                    style={{ cursor: 'pointer', opacity: 0.8 }}
+                                    size={18}
+                                    style={{
+                                        cursor: 'pointer',
+                                        color: '#7a7a7a',
+                                        opacity: openMenuIdx === index ? 1 : 0.65
+                                    }}
                                     onClick={() => setOpenMenuIdx(openMenuIdx === index ? null : index)}
                                     title="More"
                                 />
