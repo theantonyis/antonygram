@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { decrypt } from "@utils/aes256";
 
 
-export default function useSocketMessages(socket, user, selectedContactRef, setChatHistory, setMessages, setUnreadCounts) {
+export default function useSocketMessages(socket, user, selectedContactRef, setChatHistory, setMessages, unreadCounts, setUnreadCounts) {
     useEffect(() => {
         if (!socket || !user) return;
 
@@ -11,93 +11,51 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
             const {from, to, text, timestamp, senderAvatar, replyTo, clientId} = incoming;
             const contact = from === user.username ? to : from;
             const isOwn = from === user.username;
-
-            let decryptedText;
-            if (!text || incoming.deleted) {
-                decryptedText = "";
-            } else {
-                try {
-                    decryptedText = decrypt(text);
-                } catch (err) {
-                    decryptedText = "[Could not decrypt message]";
-                    console.error('Failed to decrypt message', err);
-                    return;
-                }
-            }
-
-            if (!decryptedText && !incoming.deleted) {
-                return; // Skip empty messages
-            }
-
-            // Look up replied-to message in local chat history (by _id)
-            let replyToFull = null;
-            if (replyTo && typeof replyTo === 'string') {
-                const chat = JSON.parse(JSON.stringify(window.chatHistory || {}));
-                const arr = chat[contact] || [];
-                const found = arr.find(msg => msg._id === replyTo) || null;
-                if (found) {
-                    replyToFull = {
-                        ...found,
-                        text: found.text ? decrypt(found.text) : found.text,
-                    };
-                }
-            } else if (typeof replyTo === 'object' && replyTo !== null) {
-                replyToFull = {
-                    ...replyTo,
-                    text: replyTo.text ? decrypt(replyTo.text) : replyTo.text,
-                };
-            }
+            const isGroup = incoming.isGroup || false;
+            const contactKey = isGroup ? to : contact;
 
             // Normalize for MessageList fields
             const formattedMessage = {
+                ...incoming,
                 senderAvatar: senderAvatar || (isOwn ? user.avatar : null),
-                text: decryptedText,
                 timestamp: timestamp || new Date(),
-                from,
-                to,
-                ...(incoming._id && {_id: incoming._id}),
-                ...(replyTo && {replyTo: replyToFull || replyTo}),
-                ...(clientId && {clientId}),
             };
 
-            setChatHistory(prev => ({
-                ...prev,
-                [contact]: [
-                    ...(prev[contact] || []).filter(msg =>
-                        !(clientId && msg.clientId && msg.clientId === clientId)
-                    ),
-                    formattedMessage
-                ]
-            }));
+            setChatHistory(prev => {
+                const existingMessages = prev[contactKey] || [];
 
-            if (contact === selectedContactRef.current?.username) {
+                // Filter out any temporary messages with matching clientId
+                const filteredMessages = existingMessages.filter(msg =>
+                    !(clientId && msg.clientId === clientId)
+                );
+
+                return {
+                    ...prev,
+                    [contactKey]: [...filteredMessages, formattedMessage]
+                };
+            });
+
+            const selectedContact = selectedContactRef.current;
+            const isSelected = selectedContact &&
+                (isGroup ?
+                    selectedContact.groupId === to :
+                    selectedContact.username === contact);
+
+            if (isSelected) {
                 setMessages(prev => {
-                    // Remove any with matching clientId before adding
+                    // Remove temporary messages with the same clientId if exists
                     const filtered = prev.filter(msg =>
-                        !(clientId && msg.clientId && msg.clientId === clientId)
+                        !(clientId && msg.clientId === clientId)
                     );
-                    // Standard duplicate detection as a fallback
-                    const alreadyExists = filtered.some(msg =>
-                        (msg._id && formattedMessage._id && msg._id === formattedMessage._id) ||
-                        (!msg._id && !formattedMessage._id &&
-                            msg.timestamp === formattedMessage.timestamp &&
-                            msg.from === formattedMessage.from &&
-                            msg.text === formattedMessage.text)
-                    );
-                    if (alreadyExists) return filtered;
+
                     return [...filtered, formattedMessage];
                 });
             } else if (!isOwn) {
-                // Decrypt main message text
-                const decryptedText = msg.text ? decrypt(msg.text) : '';
-                // Decrypt reply text if present
-                const replyText = msg.replyTo && msg.replyTo.text ? decrypt(msg.replyTo.text) : '';
-                if (setUnreadCounts) {
-                    setUnreadCounts(prev => ({
-                        ...prev,
-                        [from]: (prev[from] || 0) + 1
-                    }));
-                }
+                // Update unread counts for incoming messages
+                setUnreadCounts(prev => ({
+                    ...prev,
+                    [contact]: (prev[contact] || 0) + 1
+                }));
             }
         };
 

@@ -49,46 +49,35 @@ export const handleSend = async ({
         to = typeof selectedContact === 'string' ? selectedContact : selectedContact.username;
     }
 
-    const encryptedText = encrypt(input.trim());
-
-    // Create a message object similar to what's returned by backend (add timestamp)
-    const now = new Date();
-
-    const clientId = uuidv4();
-
-    const message = {
-        from: user.username,
-        to,
-        text: encryptedText,
-        timestamp: now.toISOString(),
-        ...(replyTo && replyTo._id ? { replyTo: replyTo._id } : {}),
-        clientId,
-        ...(isGroup ? { isGroup: true } : {})
-    };
-
     try {
-        socket.emit('message', message);
+        const encryptedText = encrypt(input.trim());
+        const clientId = uuidv4();
 
-        // 👇 Optimistically add the message to the local state right away
-        if (
-            typeof window !== "undefined" &&
-            typeof setChatHistory === "function" &&
-            typeof setMessages === "function" &&
-            selectedContact
-        ) {
-            const key = selectedContact.groupId || selectedContact.groupName || selectedContact.username || selectedContact;
-            setChatHistory(prev => ({
-                ...prev,
-                [key]: [...(prev[key] || []), {
-                    ...message,
-                    senderAvatar: user.avatar,
-                }],
-            }));
-            setMessages(prev => [...prev, {
-                ...message,
-                senderAvatar: user.avatar,
-            }]);
-        }
+        const message = {
+            from: user.username,
+            to,
+            text: encryptedText,
+            timestamp: new Date().toISOString(),
+            ...(replyTo && replyTo._id ? { replyTo: replyTo._id } : {}),
+            clientId,
+            isGroup,
+            senderAvatar: user.avatar,
+            _text: input.trim()
+        };
+
+        const key = isGroup ? to : (selectedContact.username || selectedContact);
+
+        // Add to chat history with temporary clientId
+        setChatHistory(prev => ({
+            ...prev,
+            [key]: [...(prev[key] || []), message]
+        }));
+
+        // Update current messages view with temporary message
+        setMessages(prev => [...prev, message]);
+
+        // Send via socket
+        socket.emit('message', message);
 
         setInput('');
     } catch (err) {

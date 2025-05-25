@@ -177,7 +177,6 @@ const Chat = () => {
     });
 
   const hydratedMessages = hydrateMessages(messages);
-  console.log(decrypt("HZ6UtqYV0PDHek0RRBc3SQ=="));
 
   useEffect(() => {
         selectedContactRef.current = selectedContact;

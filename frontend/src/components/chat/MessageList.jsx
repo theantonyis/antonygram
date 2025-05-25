@@ -150,7 +150,13 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                  }}>
                                 {msg.from}
                             </div>
-                            <div className="mb-1">{msg.text}</div>
+                            <div className="mb-1">
+                                {msg._text ||
+                                (msg.text ?
+                                (typeof msg.text === 'string' && msg.text.includes('==') ?
+                                decrypt(msg.text) : msg.text)
+                                : '')}
+                            </div>
                             <div className="text-end" style={{ fontSize: '0.83em' }}>
                                 <span className="text-secondary" style={{ opacity: 0.67 }}>
                                     {dayjs(msg.timestamp).format('HH:mm')}

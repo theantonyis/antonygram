@@ -58,6 +58,7 @@ const GroupChat = ({
       ? messages.map(msg => ({
         ...msg,
         text: (() => {
+          if (!msg.text || msg.deleted) return '';
           try {
             return decrypt(msg.text);
           } catch (err) {

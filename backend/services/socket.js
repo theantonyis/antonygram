@@ -50,7 +50,9 @@ export const initSocket = async (server, ioOptions) => {
             }
         });
 
-        socket.on('message', async ({ to, text, replyTo, isGroup }) => {
+        socket.on('message', async (message) => {
+            const { to, text, replyTo, isGroup, clientId } = message;
+
             if (!to || !text) return;
 
             // Get sender doc for avatar
@@ -60,16 +62,20 @@ export const initSocket = async (server, ioOptions) => {
                 from: socket.username,
                 to,
                 text,
-                replyTo: replyTo || null
+                replyTo: replyTo || null,
+                clientId,
             });
 
             const messageData = {
+                _id: newMessage._id,
                 from: socket.username,
                 to,
                 text,
                 timestamp: newMessage.timestamp,
                 senderAvatar: senderUser?.avatar || '',
-                replyTo: newMessage.replyTo
+                replyTo: newMessage.replyTo,
+                clientId: clientId,
+                isGroup
             };
 
             if (isGroup) {
