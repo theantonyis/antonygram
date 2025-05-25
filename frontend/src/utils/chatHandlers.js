@@ -53,16 +53,27 @@ export const handleSend = async ({
         const encryptedText = encrypt(input.trim());
         const clientId = uuidv4();
 
+        let replyToObj = null;
+        if (replyTo && replyTo._id) {
+            replyToObj = {
+                _id: replyTo._id,
+                from: replyTo.from,
+                text: replyTo.text, // Already decrypted in the UI
+                senderAvatar: replyTo.senderAvatar,
+                deleted: replyTo.deleted
+            };
+        }
+
         const message = {
             from: user.username,
             to,
             text: encryptedText,
             timestamp: new Date().toISOString(),
-            ...(replyTo && replyTo._id ? { replyTo: replyTo._id } : {}),
             clientId,
             isGroup,
             senderAvatar: user.avatar,
-            _text: input.trim()
+            _text: input.trim(),
+            replyTo: replyToObj
         };
 
         const key = isGroup ? to : (selectedContact.username || selectedContact);
@@ -77,7 +88,10 @@ export const handleSend = async ({
         setMessages(prev => [...prev, message]);
 
         // Send via socket
-        socket.emit('message', message);
+        socket.emit('message', {
+            ...message,
+            replyTo: replyTo && replyTo._id ? replyTo._id : null
+        });
 
         setInput('');
     } catch (err) {

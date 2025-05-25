@@ -27,9 +27,6 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
             {messages.map((msg, index) => {
                 if (msg.deleted) return null;
 
-                // Decrypt reply text if present
-                const replyText = msg.replyTo && msg.replyTo.text ? decrypt(msg.replyTo.text) : '';
-
                 const isOwn = msg.from === currentUser.username;
                 const avatar = msg.senderAvatar || (isOwn ? currentUser.avatar : null);
 
@@ -120,23 +117,17 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                         color: '#3173b6',
                                         marginRight: 3,
                                     }}>
-                                        {/* Always show a name, but don't show "Unknown" if message is deleted */}
-                                        {!msg.replyTo.deleted && msg.replyTo.from}
+                                        {msg.replyTo.from || 'Unknown'}
                                     </span>
                                     <span style={{
                                         color: '#5e5e5e',
                                         fontWeight: 400,
                                         fontSize: '0.93em',
                                     }}>
-                                        {/* Only show "message deleted" for deleted replies */}
-                                        {msg.replyTo.deleted
-                                            ? <span className="text-muted" style={{ fontStyle: 'italic' }}>Message deleted</span>
-                                            : (replyText
-                                                ? (replyText.length > 60
-                                                    ? replyText.slice(0, 60) + '…'
-                                                    : replyText)
-                                                : '')
-                                        }
+                                        {msg.replyTo.deleted ? 'Message was deleted' :
+                                            (typeof msg.replyTo.text === 'string' &&
+                                            msg.replyTo.text.startsWith('U2FsdGVk') ?
+                                                decrypt(msg.replyTo.text) : msg.replyTo.text)}
                                     </span>
                                 </div>
                             )}
@@ -152,10 +143,9 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                             </div>
                             <div className="mb-1">
                                 {msg._text ||
-                                (msg.text ?
-                                (typeof msg.text === 'string' && msg.text.includes('==') ?
-                                decrypt(msg.text) : msg.text)
-                                : '')}
+                                    (msg.text && typeof msg.text === 'string' ?
+                                        (msg.text.startsWith('U2FsdGVk') ? decrypt(msg.text) : msg.text)
+                                        : '')}
                             </div>
                             <div className="text-end" style={{ fontSize: '0.83em' }}>
                                 <span className="text-secondary" style={{ opacity: 0.67 }}>

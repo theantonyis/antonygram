@@ -25,9 +25,9 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
                 const existingMessages = prev[contactKey] || [];
 
                 // Filter out any temporary messages with matching clientId
-                const filteredMessages = existingMessages.filter(msg =>
-                    !(clientId && msg.clientId === clientId)
-                );
+                const filteredMessages = clientId
+                    ? existingMessages.filter(msg => msg.clientId !== clientId)
+                    : existingMessages;
 
                 return {
                     ...prev,
