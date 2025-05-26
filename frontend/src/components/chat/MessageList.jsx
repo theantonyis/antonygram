@@ -4,6 +4,7 @@ import { Trash2, CornerDownLeft, MoreVertical, Download, FileText, Image as Imag
 import { decrypt } from '@utils/aes256.js';
 import dayjs from 'dayjs';
 import { Button } from 'react-bootstrap';
+import ImageModal from './ImageModal';
 import api from '@utils/axios';
 
 const AVATAR_SIZE = 36;
@@ -16,6 +17,8 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
     const [downloading, setDownloading] = useState({});
     const [fileUrls, setFileUrls] = useState({});
     const [imgError, setImgError] = useState(false);
+    const [modalImage, setModalImage] = useState(null);
+
 
     console.log('Rendering messages:', messages);
 
@@ -57,22 +60,25 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
         try {
             setDownloading(prev => ({ ...prev, [file.blobName]: true }));
 
-            // Always request a fresh URL for downloads
+            // Always request a fresh URL for downloads/views
             const response = await api.get(`${backendURL}/api/files/download/${file.blobName}`);
             const url = response.data.url;
 
-            // Fetch the file as a blob
-            const res = await fetch(url);
-            const blob = await res.blob();
-
-            // Create a temporary anchor for download
-            const a = document.createElement('a');
-            a.href = window.URL.createObjectURL(blob);
-            a.download = file.name || 'download';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(a.href);
+            if (file.type === 'application/pdf') {
+                // Open PDF in a new tab
+                window.open(url, '_blank', 'noopener,noreferrer');
+            } else {
+                // Download other files
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = window.URL.createObjectURL(blob);
+                a.download = file.name || 'download';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(a.href);
+            }
         } catch (error) {
             console.error('Download failed:', error);
             alert('Failed to download file. Please try again.');
@@ -101,42 +107,75 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
             boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
         };
 
+        const handleImageClick = async (e, file) => {
+            e.stopPropagation(); // Prevent triggering other click events
+
+            if (!file || !file.blobName) return;
+
+            try {
+                // Get a fresh URL for the image to avoid expired URLs
+                const response = await api.get(`${backendURL}/api/files/view/${file.blobName}`);
+                setModalImage({
+                    url: response.data.url,
+                    name: file.name || 'Image'
+                });
+            } catch (error) {
+                console.error('Failed to load image for modal:', error);
+            }
+        };
+
         if (isImage) {
             return (
                 <div className="message-file-attachment mt-2">
                     <div className="message-image-preview mb-2" style={{ position: 'relative', display: 'inline-block' }}>
-                        {!imgError && imageUrl ? (
+                        {imageUrl ? (
                             <img
                                 src={imageUrl}
-                                alt={file.name}
-                                style={{ maxWidth: 180, maxHeight: 180, borderRadius: 8, objectFit: 'cover', cursor: 'pointer' }}
+                                alt={file.name || 'Image attachment'}
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '200px',
+                                    cursor: 'pointer',
+                                    borderRadius: '8px'
+                                }}
+                                onClick={(e) => handleImageClick(e, file)}
                                 onError={() => setImgError(true)}
                             />
                         ) : (
-                            <div
-                                style={{
-                                    width: 120,
-                                    height: 120,
-                                    background: '#f4f4f4',
-                                    borderRadius: 8,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: '#bbb',
-                                    fontSize: 32,
-                                }}
-                            >
-                                <ImageIcon size={48}/>
+                            <div style={{
+                                width: '200px',
+                                height: '150px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '8px'
+                            }}>
+                                <ImageIcon size={48} color="#adb5bd" />
                             </div>
                         )}
-                        <Download
-                            size={20}
+                        <Button
+                            variant="light"
+                            size="sm"
                             style={overlayIconStyle}
-                            onClick={() => handleDownload(file)}
-                            title="Download"
-                            color="#3571b9"
-                        />
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(file);
+                            }}
+                            disabled={downloadingFile}
+                        >
+                            {downloadingFile ? (
+                                <span className="spinner-border spinner-border-sm" />
+                            ) : (
+                                <Download size={20} color="#3571b9" />
+                            )}
+                        </Button>
                     </div>
+                    {file.name && (
+                        <div className="small text-muted mb-2" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {file.name}
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -420,6 +459,7 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                 );
             })}
             <div ref={endRef} />
+            <ImageModal modalImage={modalImage} setModalImage={setModalImage} />
         </div>
     );
 };
