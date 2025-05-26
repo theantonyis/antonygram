@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import Avatar from '../common/Avatar';
-import { Trash2, CornerDownLeft, MoreVertical, Download } from 'lucide-react';
+import { Trash2, CornerDownLeft, MoreVertical, Download, FileText, Image as ImageIcon } from 'lucide-react';
 import { decrypt } from '@utils/aes256.js';
 import dayjs from 'dayjs';
 import { Button } from 'react-bootstrap';
@@ -15,6 +15,7 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
     const [openMenuIdx, setOpenMenuIdx] = useState(null);
     const [downloading, setDownloading] = useState({});
     const [fileUrls, setFileUrls] = useState({});
+    const [imgError, setImgError] = useState(false);
 
     console.log('Rendering messages:', messages);
 
@@ -88,97 +89,88 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
         const isImage = file.type && file.type.startsWith('image/');
         const isPdf = file.type === 'application/pdf';
         const imageUrl = fileUrls[file.blobName];
-        const fallbackSvg = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIgLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSI+SW1hZ2UgTm90IEF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+        const downloadingFile = downloading[file.blobName];
+
+        const overlayIconStyle = {
+            position: 'absolute',
+            top: 6,
+            right: 6,
+            background: 'rgba(255,255,255,0.85)',
+            borderRadius: '50%',
+            padding: 3,
+            zIndex: 2,
+            cursor: 'pointer',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
+        };
+
+        if (isImage) {
+            return (
+                <div className="message-file-attachment mt-2">
+                    <div className="message-image-preview mb-2" style={{ position: 'relative', display: 'inline-block' }}>
+                        {!imgError && imageUrl ? (
+                            <img
+                                src={imageUrl}
+                                alt={file.name}
+                                style={{ maxWidth: 180, maxHeight: 180, borderRadius: 8, objectFit: 'cover', cursor: 'pointer' }}
+                                onError={() => setImgError(true)}
+                            />
+                        ) : (
+                            <div
+                                style={{
+                                    width: 120,
+                                    height: 120,
+                                    background: '#f4f4f4',
+                                    borderRadius: 8,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#bbb',
+                                    fontSize: 32,
+                                }}
+                            >
+                                <ImageIcon size={48}/>
+                            </div>
+                        )}
+                        <Download
+                            size={20}
+                            style={overlayIconStyle}
+                            onClick={() => handleDownload(file)}
+                            title="Download"
+                            color="#3571b9"
+                        />
+                    </div>
+                </div>
+            );
+        }
 
         return (
-            <div className="message-file-attachment mt-2">
-                {isImage && (
-                    <div className="message-image-preview mb-2" style={{ position: 'relative', display: 'inline-block' }}>
-                        <img
-                            src={imageUrl || fallbackSvg}
-                            alt={file.name || "Image attachment"}
-                            className="img-fluid rounded"
-                            style={{
-                                maxWidth: '100%',
-                                maxHeight: '200px',
-                                objectFit: 'contain',
-                                cursor: 'pointer',
-                                backgroundColor: '#f8f9fa'
-                            }}
-                            onClick={() => handleDownload(file)}
-                            onError={async (e) => {
-                                e.target.onerror = null;
-                                e.target.src = fallbackSvg;
-                                if (file.blobName) {
-                                    try {
-                                        const response = await api.get(`${backendURL}/api/files/view/${file.blobName}`);
-                                        const newUrl = response.data.url;
-                                        setFileUrls(prev => ({
-                                            ...prev,
-                                            [file.blobName]: newUrl
-                                        }));
-                                        setTimeout(() => {
-                                            if (e.target) e.target.src = newUrl;
-                                        }, 100);
-                                    } catch (err) {
-                                        console.error('Failed to refresh image URL:', err);
-                                    }
-                                }
-                            }}
-                        />
-                        <Button
-                            variant="outline-primary"
-                            size="sm"
-                            className="mt-1"
-                            style={{ position: 'absolute', right: 0, bottom: 0 }}
-                            disabled={downloading[file.blobName]}
-                            onClick={() => handleDownload(file)}
-                        >
-                            {downloading[file.blobName] ? (
-                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            ) : (
-                                <Download size={16} />
-                            )}
-                        </Button>
-                    </div>
-                )}
-
-                {isPdf && (
-                    <div className="message-pdf-preview mb-2 p-2 border rounded" style={{ backgroundColor: '#f8f9fa' }}>
-                        <div className="d-flex align-items-center">
-                            {/* ...existing PDF icon and info... */}
-                            <Button
-                                variant="outline-primary"
-                                size="sm"
-                                className="ms-2"
-                                disabled={downloading[file.blobName]}
-                                onClick={() => handleDownload(file)}
-                            >
-                                {downloading[file.blobName] ? (
-                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                ) : (
-                                    <Download size={16} />
-                                )}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                {!isImage && !isPdf && (
-                    <div className="d-flex align-items-center">
-                        <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            disabled={downloading[file.blobName]}
-                            onClick={() => handleDownload(file)}
-                            style={{ fontSize: '0.8rem' }}
-                        >
-                            <Download size={14} className="me-1" />
-                            {file.name || "Attachment"}
-                            {downloading[file.blobName] && <span className="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true"></span>}
-                        </Button>
-                    </div>
-                )}
+            <div style={{ position: 'relative', display: 'inline-block', minWidth: 120, minHeight: 60 }}>
+                <div
+                    style={{
+                        width: 120,
+                        height: 60,
+                        background: '#f4f4f4',
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#888',
+                        fontSize: 18,
+                        gap: 8,
+                    }}
+                >
+                    {isPdf ? <FileText size={28} /> : <FileText size={24} />}
+                    <span style={{ fontSize: 13, maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {file.name}
+            </span>
+                </div>
+                <Download
+                    size={20}
+                    style={overlayIconStyle}
+                    onClick={() => handleDownload(file)}
+                    title="Download"
+                    color="#3571b9"
+                />
             </div>
         );
     };
