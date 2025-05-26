@@ -1,29 +1,13 @@
 // backend/routes/files.js
 import express from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import auth from '../middleware/auth.js';
+import { uploadFile, generateSasUrl } from '../services/azureStorage.js';
 
 const router = express.Router();
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.resolve('./uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure multer storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-        const fileExt = path.extname(file.originalname);
-        cb(null, `${uniqueSuffix}${fileExt}`);
-    }
-});
+// Configure multer for memory storage (not disk)
+const storage = multer.memoryStorage();
 
 // File filter to limit file types
 const fileFilter = (req, file, cb) => {
@@ -48,20 +32,57 @@ const upload = multer({
 });
 
 // Route to handle file uploads
-router.post('/upload', auth, upload.single('file'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ message: 'No file uploaded' });
-    }
-
-    // Return file details to client
-    res.status(200).json({
-        file: {
-            url: `/uploads/${req.file.filename}`,
-            name: req.file.originalname,
-            type: req.file.mimetype,
-            size: req.file.size
+router.post('/upload', auth, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
         }
-    });
+
+        const fileBuffer = req.file.buffer;
+        const fileName = req.file.originalname;
+        const fileType = req.file.mimetype;
+
+        // Upload to Azure Blob Storage
+        const blobName = await uploadFile(fileBuffer, fileName, fileType);
+
+        // Return file data without generating SAS URL yet
+        res.status(200).json({
+            file: {
+                name: fileName,
+                type: fileType,
+                blobName: blobName,
+                size: req.file.size
+            }
+        });
+    } catch (error) {
+        console.error('File upload error:', error);
+        return res.status(500).json({ error: 'File upload failed' });
+    }
+});
+
+// Route to get a new SAS URL for an expired one
+router.get('/download/:blobName', auth, async (req, res) => {
+    try {
+        const { blobName } = req.params;
+        const url = await generateSasUrl(blobName);
+
+        return res.status(200).json({ url });
+    } catch (error) {
+        console.error('File download error:', error);
+        return res.status(500).json({ error: 'Failed to generate download URL' });
+    }
+});
+
+router.get('/view/:blobName', auth, async (req, res) => {
+    try {
+        const { blobName } = req.params;
+        const url = await generateSasUrl(blobName);
+
+        return res.status(200).json({ url });
+    } catch (error) {
+        console.error('File view error:', error);
+        return res.status(500).json({ error: 'Failed to generate view URL' });
+    }
 });
 
 export default router;

@@ -1,20 +1,187 @@
 import React, { useRef, useEffect, useState } from 'react';
 import Avatar from '../common/Avatar';
-import { Trash2, CornerDownLeft, MoreVertical } from 'lucide-react';
+import { Trash2, CornerDownLeft, MoreVertical, Download } from 'lucide-react';
 import { decrypt } from '@utils/aes256.js';
 import dayjs from 'dayjs';
+import { Button } from 'react-bootstrap';
+import api from '@utils/axios';
 
 const AVATAR_SIZE = 36;
 
-const  backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage }) => {
     const endRef = useRef(null);
     const [openMenuIdx, setOpenMenuIdx] = useState(null);
+    const [downloading, setDownloading] = useState({});
+    const [fileUrls, setFileUrls] = useState({});
+
+    console.log('Rendering messages:', messages);
 
     useEffect(() => {
         endRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    useEffect(() => {
+        const loadImageUrls = async () => {
+            for (const message of messages) {
+                if (message.file?.blobName &&
+                    message.file.type &&
+                    message.file.type.startsWith('image/')) {
+
+                    try {
+                        console.log('Checking message for file:', message);
+                        const response = await api.get(`${backendURL}/api/files/view/${message.file.blobName}`);
+                        setFileUrls(prev => ({
+                            ...prev,
+                            [message.file.blobName]: response.data.url
+                        }));
+                    } catch (error) {
+                        console.error('Failed to get image URL:', error);
+                    }
+                }
+            }
+        };
+
+        loadImageUrls();
+
+        // Auto-refresh URLs every 14 minutes (just before the 15-minute expiry)
+        const interval = setInterval(loadImageUrls, 14 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [messages]);
+
+    const handleDownload = async (file) => {
+        if (!file || !file.blobName) return;
+
+        console.log('Downloading file:', file);
+
+        try {
+            setDownloading(prev => ({ ...prev, [file.blobName]: true }));
+
+            // Always request a fresh URL for downloads to avoid expired URLs
+            const response = await api.get(`${backendURL}/api/files/download/${file.blobName}`);
+            const url = response.data.url;
+
+            // Open in new tab for images (can be saved from there)
+            if (file.type && file.type.startsWith('image/')) {
+                window.open(url, '_blank');
+            } else {
+                // For non-images, use download attribute
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name || 'download';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Failed to download file. Please try again.');
+        } finally {
+            setDownloading(prev => ({ ...prev, [file.blobName]: false }));
+        }
+    };
+
+    const renderFileAttachment = (file) => {
+        if (!file) return null;
+
+        const isImage = file.type && file.type.startsWith('image/');
+        const isPdf = file.type === 'application/pdf';
+        const imageUrl = fileUrls[file.blobName];
+        const fallbackSvg = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIgLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSI+SW1hZ2UgTm90IEF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+
+        return (
+            <div className="message-file-attachment mt-2">
+                {isImage && (
+                    <div className="message-image-preview mb-2" style={{ position: 'relative', display: 'inline-block' }}>
+                        <img
+                            src={imageUrl || fallbackSvg}
+                            alt={file.name || "Image attachment"}
+                            className="img-fluid rounded"
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '200px',
+                                objectFit: 'contain',
+                                cursor: 'pointer',
+                                backgroundColor: '#f8f9fa'
+                            }}
+                            onClick={() => handleDownload(file)}
+                            onError={async (e) => {
+                                e.target.onerror = null;
+                                e.target.src = fallbackSvg;
+                                if (file.blobName) {
+                                    try {
+                                        const response = await api.get(`${backendURL}/api/files/view/${file.blobName}`);
+                                        const newUrl = response.data.url;
+                                        setFileUrls(prev => ({
+                                            ...prev,
+                                            [file.blobName]: newUrl
+                                        }));
+                                        setTimeout(() => {
+                                            if (e.target) e.target.src = newUrl;
+                                        }, 100);
+                                    } catch (err) {
+                                        console.error('Failed to refresh image URL:', err);
+                                    }
+                                }
+                            }}
+                        />
+                        <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="mt-1"
+                            style={{ position: 'absolute', right: 0, bottom: 0 }}
+                            disabled={downloading[file.blobName]}
+                            onClick={() => handleDownload(file)}
+                        >
+                            {downloading[file.blobName] ? (
+                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            ) : (
+                                <Download size={16} />
+                            )}
+                        </Button>
+                    </div>
+                )}
+
+                {isPdf && (
+                    <div className="message-pdf-preview mb-2 p-2 border rounded" style={{ backgroundColor: '#f8f9fa' }}>
+                        <div className="d-flex align-items-center">
+                            {/* ...existing PDF icon and info... */}
+                            <Button
+                                variant="outline-primary"
+                                size="sm"
+                                className="ms-2"
+                                disabled={downloading[file.blobName]}
+                                onClick={() => handleDownload(file)}
+                            >
+                                {downloading[file.blobName] ? (
+                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                ) : (
+                                    <Download size={16} />
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {!isImage && !isPdf && (
+                    <div className="d-flex align-items-center">
+                        <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            disabled={downloading[file.blobName]}
+                            onClick={() => handleDownload(file)}
+                            style={{ fontSize: '0.8rem' }}
+                        >
+                            <Download size={14} className="me-1" />
+                            {file.name || "Attachment"}
+                            {downloading[file.blobName] && <span className="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true"></span>}
+                        </Button>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     if (!Array.isArray(messages)) return <div>not an array</div>;
     if (messages.length === 0) return (
@@ -61,7 +228,9 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                     textAlign: isOwn ? "right" : "left"
                                 }}
                             >
-                                <span className="text-muted">Message deleted</span>
+                                <span className="text-muted">Message deleted
+                                    {msg.file && renderFileAttachment(msg.file)}
+                                </span>
                             </div>
                             {isOwn && <Avatar avatar={avatar} size={AVATAR_SIZE} className="chat-message-avatar" />}
                         </div>
@@ -151,45 +320,8 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                             decrypt(msg.text) : msg.text)
                                         : '')}
                             </div>
-                            {msg.file && !msg.deleted && (
-                                <div className="file-attachment my-2">
-                                    {msg.file.type?.startsWith('image/') ? (
-                                        <img
-                                            src={`${backendURL}${msg.file.url}`}
-                                            alt={msg.file.name || "Image"}
-                                            className="img-fluid rounded"
-                                            style={{
-                                                maxWidth: '100%',
-                                                maxHeight: '250px',
-                                                cursor: 'pointer'
-                                            }}
-                                            onClick={() => window.open(`${backendURL}${msg.file.url}`, '_blank')}
-                                        />
-                                    ) : (
-                                        <div
-                                            className="document-attachment p-2 rounded"
-                                            style={{
-                                                backgroundColor: '#f5f5f5',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                cursor: 'pointer'
-                                            }}
-                                            onClick={() => window.open(`${backendURL}${msg.file.url}`, '_blank')}
-                                        >
-                                            <div className="file-icon">📄</div>
-                                            <div>
-                                                <div className="file-name text-truncate" style={{ maxWidth: '160px' }}>
-                                                    {msg.file.name}
-                                                </div>
-                                                <small className="text-muted">
-                                                    {(msg.file.size / 1024).toFixed(1)} KB
-                                                </small>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                            {msg.file && !msg.deleted && renderFileAttachment(msg.file)}
+
                             <div className="text-end" style={{ fontSize: '0.83em' }}>
                                 <span className="text-secondary" style={{ opacity: 0.67 }}>
                                     {dayjs(msg.timestamp).format('HH:mm')}

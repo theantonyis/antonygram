@@ -17,6 +17,7 @@ const MessageSchema = new mongoose.Schema({
         name: { type: String, required: false },
         size: { type: Number, required: false },
         type: { type: String, required: false },
+        blobName: { type: String, required: false },
     },
     clientId: { type: String },
     isGroup: { type: Boolean, default: false },

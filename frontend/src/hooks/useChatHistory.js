@@ -25,12 +25,14 @@ export default function useChatHistory(selectedContact, chatHistory, setMessages
                     const res = await api.get(`${backendURL}/api/messages/groups/${selectedContact.groupId}`);
                     setChatHistory(prev => ({ ...prev, [contactKey]: res.data.messages || [] }));
                     setMessages(res.data.messages || []);
+                    console.log('Fetched messages:', res.data.messages);
                 } else {
                     // For direct messages, use the existing endpoint
                     const username = typeof selectedContact === 'string' ? selectedContact : selectedContact.username;
                     const res = await api.get(`${backendURL}/api/messages/${username}`);
                     setChatHistory(prev => ({ ...prev, [contactKey]: res.data.messages }));
                     setMessages(res.data.messages);
+                    console.log('Fetched messages:', res.data.messages);
                 }
             } catch (err) {
                 console.error('Failed to fetch messages', err);

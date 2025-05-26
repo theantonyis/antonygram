@@ -2,6 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Form, InputGroup, Button, Spinner } from 'react-bootstrap';
 import { Send, Paperclip, X } from 'react-bootstrap-icons';
+import { Download } from 'lucide-react';
 import api from '@utils/axios.js';
 import {toast} from "react-toastify";
 
@@ -30,7 +31,7 @@ const MessageInput = ({ onSend, replyTo, onCancelReply }) => {
                             'Content-Type': 'multipart/form-data',
                         },
                     });
-                    fileData = response.data.file;
+                    fileData = response.data.file
                 } catch (err) {
                     console.error('File upload failed:', err);
                     toast.error('File upload failed');
