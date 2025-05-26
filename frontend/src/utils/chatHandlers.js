@@ -33,9 +33,10 @@ export const handleSend = async ({
     setMessages,
     setChatHistory,
     setInput,
-    replyTo
+    replyTo,
+    file,
 }) => {
-    if (!input.trim() || !selectedContact) return;
+    if ((!input.trim() && !file) || !selectedContact) return;
 
     let to, isGroup = false;
 
@@ -50,7 +51,7 @@ export const handleSend = async ({
     }
 
     try {
-        const encryptedText = encrypt(input.trim());
+        const encryptedText = input.trim() ? encrypt(input.trim()) : '';
         const clientId = uuidv4();
 
         let replyToObj = null;
@@ -73,7 +74,8 @@ export const handleSend = async ({
             isGroup,
             senderAvatar: user.avatar,
             _text: input.trim(),
-            replyTo: replyToObj
+            replyTo: replyToObj,
+            file
         };
 
         const key = isGroup ? to : (selectedContact.username || selectedContact);

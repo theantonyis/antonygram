@@ -66,7 +66,7 @@ const Chat = () => {
 
     const onLogout = () => handleLogout(router);
 
-    const onSend = (text) => {
+    const onSend = (text, fileData) => {
         handleSend({
             input: text,
             selectedContact,
@@ -76,6 +76,7 @@ const Chat = () => {
             setMessages,
             setChatHistory,
             replyTo,
+            file: fileData,
         });
         setReplyTo(null);
     };

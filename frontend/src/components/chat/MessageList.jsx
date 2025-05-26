@@ -6,6 +6,8 @@ import dayjs from 'dayjs';
 
 const AVATAR_SIZE = 36;
 
+const  backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage }) => {
     const endRef = useRef(null);
     const [openMenuIdx, setOpenMenuIdx] = useState(null);
@@ -149,6 +151,45 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                             decrypt(msg.text) : msg.text)
                                         : '')}
                             </div>
+                            {msg.file && !msg.deleted && (
+                                <div className="file-attachment my-2">
+                                    {msg.file.type?.startsWith('image/') ? (
+                                        <img
+                                            src={`${backendURL}${msg.file.url}`}
+                                            alt={msg.file.name || "Image"}
+                                            className="img-fluid rounded"
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '250px',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => window.open(`${backendURL}${msg.file.url}`, '_blank')}
+                                        />
+                                    ) : (
+                                        <div
+                                            className="document-attachment p-2 rounded"
+                                            style={{
+                                                backgroundColor: '#f5f5f5',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => window.open(`${backendURL}${msg.file.url}`, '_blank')}
+                                        >
+                                            <div className="file-icon">📄</div>
+                                            <div>
+                                                <div className="file-name text-truncate" style={{ maxWidth: '160px' }}>
+                                                    {msg.file.name}
+                                                </div>
+                                                <small className="text-muted">
+                                                    {(msg.file.size / 1024).toFixed(1)} KB
+                                                </small>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="text-end" style={{ fontSize: '0.83em' }}>
                                 <span className="text-secondary" style={{ opacity: 0.67 }}>
                                     {dayjs(msg.timestamp).format('HH:mm')}

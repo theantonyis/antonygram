@@ -51,9 +51,11 @@ export const initSocket = async (server, ioOptions) => {
         });
 
         socket.on('message', async (message) => {
-            const { to, text, replyTo, isGroup, clientId } = message;
+            const { to, text, replyTo, isGroup, clientId, file } = message;
 
-            if (!to || !text) return;
+            console.log('Message received:', { to, hasText: !!text, hasFile: !!file });
+
+            if (!to || (!text && !file)) return;
 
             // Get sender doc for avatar
             const senderUser = await User.findOne({ username: socket.username });
@@ -61,21 +63,24 @@ export const initSocket = async (server, ioOptions) => {
             const newMessage = await Message.create({
                 from: socket.username,
                 to,
-                text,
+                text: text || '',
                 replyTo: replyTo || null,
                 clientId,
+                file,
+                isGroup: isGroup || false
             });
 
             const messageData = {
                 _id: newMessage._id,
                 from: socket.username,
                 to,
-                text,
+                text: text || '',
                 timestamp: newMessage.timestamp,
                 senderAvatar: senderUser?.avatar || '',
                 replyTo: newMessage.replyTo,
                 clientId: clientId,
-                isGroup
+                isGroup: isGroup || false,
+                file: file
             };
 
             if (isGroup) {
