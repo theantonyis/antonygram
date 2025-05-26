@@ -32,15 +32,24 @@ const initialize = async () => {
 
 initialize();
 
+// Add this helper at the top of the file
+function sanitizeFileName(fileName) {
+    // Allow Unicode letters, numbers, dot, dash, underscore
+    return fileName
+        .replace(/[^\p{L}\p{N}.\-_]/gu, '_')
+        .replace(/_+/g, '_');
+}
+
 export const uploadFile = async (fileBuffer, fileName, fileType) => {
-    const blobName = `${Date.now()}-${fileName}`;
+    const safeFileName = sanitizeFileName(fileName);
+    const blobName = `${Date.now()}-${safeFileName}`;
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
     await blockBlobClient.uploadData(fileBuffer, {
         blobHTTPHeaders: { blobContentType: fileType }
     });
 
-    return blobName;
+    return { blobName, originalName: fileName };
 };
 
 export const generateSasUrl = async (blobName) => {

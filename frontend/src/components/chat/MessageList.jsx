@@ -54,27 +54,25 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
     const handleDownload = async (file) => {
         if (!file || !file.blobName) return;
 
-        console.log('Downloading file:', file);
-
         try {
             setDownloading(prev => ({ ...prev, [file.blobName]: true }));
 
-            // Always request a fresh URL for downloads to avoid expired URLs
+            // Always request a fresh URL for downloads
             const response = await api.get(`${backendURL}/api/files/download/${file.blobName}`);
             const url = response.data.url;
 
-            // Open in new tab for images (can be saved from there)
-            if (file.type && file.type.startsWith('image/')) {
-                window.open(url, '_blank');
-            } else {
-                // For non-images, use download attribute
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = file.name || 'download';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            }
+            // Fetch the file as a blob
+            const res = await fetch(url);
+            const blob = await res.blob();
+
+            // Create a temporary anchor for download
+            const a = document.createElement('a');
+            a.href = window.URL.createObjectURL(blob);
+            a.download = file.name || 'download';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(a.href);
         } catch (error) {
             console.error('Download failed:', error);
             alert('Failed to download file. Please try again.');
@@ -161,8 +159,8 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                 >
                     {isPdf ? <FileText size={28} /> : <FileText size={24} />}
                     <span style={{ fontSize: 13, maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {file.name}
-            </span>
+                        {file.name}
+                    </span>
                 </div>
                 <Download
                     size={20}

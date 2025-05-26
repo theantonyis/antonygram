@@ -14,7 +14,7 @@ const fileFilter = (req, file, cb) => {
     const allowedTypes = [
         'image/jpeg', 'image/png', 'image/gif', 'image/webp',
         'application/pdf', 'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // <-- .docx
         'text/plain'
     ];
 
@@ -43,20 +43,21 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
         const fileType = req.file.mimetype;
 
         // Upload to Azure Blob Storage
-        const blobName = await uploadFile(fileBuffer, fileName, fileType);
+        const { blobName, originalName } = await uploadFile(fileBuffer, fileName, fileType);
 
         // Return file data without generating SAS URL yet
         res.status(200).json({
             file: {
-                name: fileName,
+                name: originalName,
                 type: fileType,
                 blobName: blobName,
                 size: req.file.size
             }
         });
+        console.log('Received file name:', req.file.originalname);
     } catch (error) {
-        console.error('File upload error:', error);
-        return res.status(500).json({ error: 'File upload failed' });
+        console.error('File upload error:', error, error.stack);
+        return res.status(500).json({ error: 'File upload failed', details: error.message });
     }
 });
 

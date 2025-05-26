@@ -2,11 +2,11 @@
 import React, { useState, useRef } from 'react';
 import { Form, InputGroup, Button, Spinner } from 'react-bootstrap';
 import { Send, Paperclip, X } from 'react-bootstrap-icons';
-import { Download } from 'lucide-react';
 import api from '@utils/axios.js';
 import {toast} from "react-toastify";
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const MessageInput = ({ onSend, replyTo, onCancelReply }) => {
     const [text, setText] = useState('');
@@ -52,8 +52,14 @@ const MessageInput = ({ onSend, replyTo, onCancelReply }) => {
     };
 
     const handleFileChange = (e) => {
-        if (e.target.files[0]) {
-            setFile(e.target.files[0]);
+        const fileObj = e.target.files[0];
+        if (fileObj) {
+            if (fileObj.size > MAX_FILE_SIZE) {
+                toast.error('File is too big (max 5MB)');
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+            }
+            setFile(fileObj);
         }
     };
 
