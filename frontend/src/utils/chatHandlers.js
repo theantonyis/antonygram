@@ -59,9 +59,16 @@ export const handleSend = async ({
             replyToObj = {
                 _id: replyTo._id,
                 from: replyTo.from,
-                text: replyTo.text, // Already decrypted in the UI
+                text: replyTo.text,
                 senderAvatar: replyTo.senderAvatar,
-                deleted: replyTo.deleted
+                deleted: replyTo.deleted,
+                // Make sure to include file info if the message being replied to has a file
+                file: replyTo.file ? {
+                    blobName: replyTo.file.blobName,
+                    name: replyTo.file.name,
+                    type: replyTo.file.type,
+                    size: replyTo.file.size
+                } : undefined
             };
         }
 
@@ -92,7 +99,7 @@ export const handleSend = async ({
         // Send via socket
         socket.emit('message', {
             ...message,
-            replyTo: replyTo && replyTo._id ? replyTo._id : null
+            replyTo: replyToObj
         });
 
         setInput('');
@@ -321,7 +328,22 @@ export const handleReplyMessage = ({
     msg,
     setReplyTo
 }) => {
-    setReplyTo(msg);
+    const replyData = {
+        _id: msg._id,
+        from: msg.from,
+        text: msg.text,
+        senderAvatar: msg.senderAvatar,
+        deleted: msg.deleted,
+        // Include file information if available
+        file: msg.file ? {
+            blobName: msg.file.blobName,
+            name: msg.file.name,
+            type: msg.file.type,
+            size: msg.file.size
+        } : undefined
+    };
+
+    setReplyTo(replyData);
 };
 
 /**
@@ -400,6 +422,88 @@ export const handleGroupDeleted = ({
 
     if (selectedContact?.groupId === groupId && typeof setSelectedContact === 'function') {
         setSelectedContact(null);
+    }
+};
+
+export const handleUserProfileUpdate = async ({
+  username,
+  originalUsername,
+  file,
+  user,
+  fileInputRef,
+  setLoading,
+  setError,
+  onHide,
+  onUserUpdate
+}) => {
+    setError('');
+    setLoading(true);
+
+    try {
+        let avatarUrl = user?.avatar;
+
+        // If there's a new file, upload it first
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const uploadResponse = await api.post(`${backendURL}/api/files/upload`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+
+                if (uploadResponse.data && uploadResponse.data.file) {
+                    const viewResponse = await api.get(`${backendURL}/api/files/view/${uploadResponse.data.file.blobName}`);
+                    avatarUrl = viewResponse.data.url;
+                }
+            } catch (err) {
+                console.error('Avatar upload failed:', err);
+                setError('Failed to upload avatar');
+                setLoading(false);
+                return;
+            }
+        }
+
+        // Update username if changed
+        if (username !== originalUsername) {
+            try {
+                await api.put(`${backendURL}/api/users/update-username`, { username });
+            } catch (err) {
+                console.error('Username update failed:', err);
+                setError(err.response?.data?.message || 'Failed to update username');
+                setLoading(false);
+                return;
+            }
+        }
+
+        // Update avatar if changed
+        if (file) {
+            try {
+                await api.put(`${backendURL}/api/users/avatar`, {
+                    avatarUrl,
+                    blobName: file ? `${Date.now()}-${file.name}` : null
+                });
+            } catch (err) {
+                console.error('Avatar update failed:', err);
+                setError('Failed to update avatar');
+                setLoading(false);
+                return;
+            }
+        }
+
+        // Call the callback with updated user
+        onUserUpdate({
+            ...user,
+            username,
+            avatar: avatarUrl
+        });
+
+        onHide();
+    } catch (err) {
+        console.error('Profile update error:', err);
+        setError('Failed to update profile');
+    } finally {
+        setLoading(false);
     }
 };
 

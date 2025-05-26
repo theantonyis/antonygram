@@ -8,6 +8,7 @@ import messageRoutes from './routes/messages.js';
 import contactsRoutes from './routes/contacts.js';
 import groupsRoutes from './routes/groups.js';
 import filesRoutes from "./routes/files.js";
+import usersRoutes from './routes/users.js';
 import { connectToDB } from './services/db.js';
 import { initSocket } from './services/socket.js';
 
@@ -29,6 +30,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/groups', groupsRoutes);
 app.use('/api/files', filesRoutes);
+app.use('/api/users', usersRoutes);
 
 connectToDB();
 

@@ -87,6 +87,23 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
         }
     };
 
+    const handleImageClick = async (e, file) => {
+        e.stopPropagation(); // Prevent triggering other click events
+
+        if (!file || !file.blobName) return;
+
+        try {
+            // Get a fresh URL for the image to avoid expired URLs
+            const response = await api.get(`${backendURL}/api/files/view/${file.blobName}`);
+            setModalImage({
+                url: response.data.url,
+                name: file.name || 'Image'
+            });
+        } catch (error) {
+            console.error('Failed to load image for modal:', error);
+        }
+    };
+
     const renderFileAttachment = (file) => {
         if (!file) return null;
 
@@ -105,23 +122,6 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
             zIndex: 2,
             cursor: 'pointer',
             boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
-        };
-
-        const handleImageClick = async (e, file) => {
-            e.stopPropagation(); // Prevent triggering other click events
-
-            if (!file || !file.blobName) return;
-
-            try {
-                // Get a fresh URL for the image to avoid expired URLs
-                const response = await api.get(`${backendURL}/api/files/view/${file.blobName}`);
-                setModalImage({
-                    url: response.data.url,
-                    name: file.name || 'Image'
-                });
-            } catch (error) {
-                console.error('Failed to load image for modal:', error);
-            }
         };
 
         if (isImage) {
@@ -292,7 +292,7 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                 overflow: 'visible'
                             }}
                         >
-                            {msg.replyTo && typeof msg.replyTo === 'object' && (msg.replyTo.from || msg.replyTo.text || msg.replyTo.deleted !== undefined) && (
+                            {msg.replyTo && typeof msg.replyTo === 'object' && (msg.replyTo.from || msg.replyTo.text || msg.replyTo.file || msg.replyTo.deleted !== undefined) && (
                                 <div
                                     className="mb-2 small"
                                     style={{
@@ -324,11 +324,16 @@ const MessageList = ({ messages, currentUser, onDeleteMessage, onReplyMessage })
                                         fontWeight: 400,
                                         fontSize: '0.93em',
                                     }}>
-                                        {msg.replyTo.deleted ? 'Message was deleted' :
-                                            (msg.replyTo.text && typeof msg.replyTo.text === 'string' ?
-                                                (msg.replyTo.text.startsWith('U2FsdGVk') ?
-                                                    decrypt(msg.replyTo.text) : msg.replyTo.text)
-                                                : '')}
+                                        {msg.replyTo.deleted ? 'Message was deleted' : (
+                                            <>
+                                                {(msg.replyTo.text && typeof msg.replyTo.text === 'string' && msg.replyTo.text.length > 0) ?
+                                                    (msg.replyTo.text.startsWith('U2FsdGVk') ? decrypt(msg.replyTo.text) : msg.replyTo.text) :
+                                                    ''}
+                                                {msg.replyTo.file && (
+                                                    `${(msg.replyTo.text && typeof msg.replyTo.text === 'string' && msg.replyTo.text.length > 0) ? ' ' : ''}[${msg.replyTo.file?.type?.startsWith('image/') ? 'Image' : 'File'}]`
+                                                )}
+                                            </>
+                                        )}
                                     </span>
                                 </div>
                             )}

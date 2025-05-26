@@ -19,8 +19,8 @@ import MessageList from '@components/chat/MessageList.jsx';
 import MessageInput from '@components/chat/MessageInput.jsx';
 import GroupChat from '@components/chat/GroupChat.jsx';
 import DeleteContactModal from '@components/chat/DeleteContactModal.jsx';
+import ProfileSettingsModal from "@components/user/ProfileSettingsModal.jsx";
 import api from '@utils/axios.js';
-import { decrypt } from '@utils/aes256.js';
 
 import {
     handleLogout,
@@ -49,6 +49,7 @@ const Chat = () => {
     const [addContactInput, setAddContactInput] = useState('');
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const [contactToDelete, setContactToDelete] = useState(null);
     const [showContacts, setShowContacts] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState({});
@@ -176,6 +177,73 @@ const Chat = () => {
         setSelectedContact
     });
 
+
+    const handleUserUpdate = (updatedUser) => {
+        const oldUsername = user.username;
+        const newUsername = updatedUser.username;
+
+        // Update the user object in local state
+        if (user) {
+            Object.assign(user, {
+                avatar: updatedUser.avatar,
+                username: updatedUser.username
+            });
+        }
+
+        // Update contact list if username changed
+        if (oldUsername !== newUsername) {
+            setContactsList(prevContacts =>
+                prevContacts.map(contact => {
+                    if (contact.username === oldUsername) {
+                        return { ...contact, username: newUsername };
+                    }
+                    return contact;
+                })
+            );
+
+            // Update chat history keys
+            setChatHistory(prevHistory => {
+                const updatedHistory = {};
+                // Copy all existing conversations except the old username one
+                Object.keys(prevHistory).forEach(key => {
+                    if (key !== oldUsername) {
+                        updatedHistory[key] = prevHistory[key];
+                    }
+                });
+
+                // If there was a conversation with the old username, move it to the new username
+                if (prevHistory[oldUsername]) {
+                    updatedHistory[newUsername] = prevHistory[oldUsername];
+                }
+
+                return updatedHistory;
+            });
+        }
+
+        // Rest of your existing code for updating messages...
+        setMessages(prevMessages => prevMessages.map(msg => {
+            if (msg.from === oldUsername) {
+                return {
+                    ...msg,
+                    from: newUsername,
+                    senderAvatar: updatedUser.avatar
+                };
+            }
+            return msg;
+        }));
+
+        // Update the header avatar using the ref approach for reliability
+        const headerImage = document.querySelector('img[alt="User Avatar"]');
+        if (headerImage) {
+            headerImage.src = updatedUser.avatar || DEFAULT_AVATAR;
+        }
+
+        // Force refresh if username changed - usernames are referenced throughout the database
+        if (oldUsername !== newUsername) {
+            window.location.reload();
+        }
+    };
+
   const hydratedMessages = hydrateMessages(messages);
 
   useEffect(() => {
@@ -192,14 +260,16 @@ const Chat = () => {
       <Container fluid className="p-4" style={{ minHeight: '100vh', height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Row className="mb-4 align-items-center d-none d-md-flex">
           <Col xs="auto" className="d-flex align-items-center">
-            <Image
-              src={user?.avatar || DEFAULT_AVATAR}
-              alt="User Avatar"
-              roundedCircle
-              width={48}
-              height={48}
-              className="me-2"
-            />
+              <Image
+                  src={user?.avatar || DEFAULT_AVATAR}
+                  alt="User Avatar"
+                  roundedCircle
+                  width={48}
+                  height={48}
+                  className="me-2"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setShowProfileModal(true)}
+              />
             <strong>{user?.username}</strong>
           </Col>
           <Col className="text-end">
@@ -326,6 +396,12 @@ const Chat = () => {
         onHide={onCloseDeleteModal}
         onConfirm={onConfirmDeleteContact}
       />
+        <ProfileSettingsModal
+            show={showProfileModal}
+            onHide={() => setShowProfileModal(false)}
+            user={user}
+            onUserUpdate={handleUserUpdate}
+        />
     </>
   );
 };
