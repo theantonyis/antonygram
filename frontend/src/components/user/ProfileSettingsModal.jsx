@@ -10,8 +10,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const ProfileSettingsModal = ({ show, onHide, user, onUserUpdate }) => {
     const [avatar, setAvatar] = useState(null);
-    const [username, setUsername] = useState(user?.username || '');
-    const [originalUsername] = useState(user?.username || '');
+    const [name, setName] = useState(user?.name || '');
+    const [surname, setSurname] = useState(user?.surname || '');
     const [file, setFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(user?.avatar || '');
     const [loading, setLoading] = useState(false);
@@ -20,7 +20,8 @@ const ProfileSettingsModal = ({ show, onHide, user, onUserUpdate }) => {
 
     useEffect(() => {
         if (user) {
-            setUsername(user.username || '');
+            setName(user.name || '');
+            setSurname(user.surname || '');
             setPreviewUrl(user.avatar || '');
         }
     }, [user]);
@@ -59,8 +60,8 @@ const ProfileSettingsModal = ({ show, onHide, user, onUserUpdate }) => {
         e.preventDefault();
 
         handleUserProfileUpdate({
-            username,
-            originalUsername,
+            name,
+            surname,
             file,
             user,
             fileInputRef,
@@ -116,12 +117,21 @@ const ProfileSettingsModal = ({ show, onHide, user, onUserUpdate }) => {
                     </div>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>Username</Form.Label>
+                        <Form.Label>Name</Form.Label>
                         <Form.Control
                             type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            minLength={3}
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label>Surname</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={surname}
+                            onChange={(e) => setSurname(e.target.value)}
                             required
                         />
                     </Form.Group>
@@ -142,7 +152,7 @@ const ProfileSettingsModal = ({ show, onHide, user, onUserUpdate }) => {
                         <Button
                             type="submit"
                             variant="primary"
-                            disabled={loading || (!file && username === originalUsername)}
+                            disabled={loading}
                         >
                             {loading ? <Spinner animation="border" size="sm" /> : 'Save Changes'}
                         </Button>

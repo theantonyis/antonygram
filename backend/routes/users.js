@@ -6,79 +6,55 @@ import { Message } from '../models/Message.js';
 
 const router = express.Router();
 
-// Route to update username
-router.put('/update-username', auth, async (req, res) => {
-    const { username } = req.body;
+router.get('/profile', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId)
+            .select('-password -salt');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json(user);
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.put('/update-profile', auth, async (req, res) => {
+    const { name, surname, avatarUrl } = req.body;
     const currentUsername = req.user.username;
 
-    // Input validation
-    if (!username || username.trim().length < 3) {
-        return res.status(400).json({ message: 'Username must be at least 3 characters long' });
+    if (name && name.trim().length === 0) {
+        return res.status(400).json({ message: 'Name cannot be empty' });
     }
 
-    // Check if new username already exists
+    const updateFields = {};
+
+    if (name) updateFields.name = name;
+    if (surname !== undefined) updateFields.surname = surname;
+    if (avatarUrl) updateFields.avatar = avatarUrl;
+
     try {
-        const existingUser = await User.findOne({ username });
-        if (existingUser) {
-            return res.status(400).json({ message: 'Username already taken' });
+        // Update the user's profile
+        const updatedUser = await User.findOneAndUpdate(
+            { username: currentUsername },
+            updateFields,
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
         }
 
-        // Start a session for transaction
-        const session = await mongoose.startSession();
-        session.startTransaction();
-
-        try {
-            // Update the user's username
-            const updatedUser = await User.findOneAndUpdate(
-                { username: currentUsername },
-                { username },
-                { new: true, session }
-            );
-
-            if (!updatedUser) {
-                await session.abortTransaction();
-                session.endSession();
-                return res.status(404).json({ message: 'User not found' });
-            }
-
-            // Update username references in other users' contacts
-            await User.updateMany(
-                { contacts: currentUsername },
-                { $set: { "contacts.$[elem]": username } },
-                { arrayFilters: [{ elem: currentUsername }], session }
-            );
-
-            // Update username references in messages (from field)
-            await Message.updateMany(
-                { from: currentUsername },
-                { $set: { from: username } },
-                { session }
-            );
-
-            // Update username references in messages (to field)
-            await Message.updateMany(
-                { to: currentUsername },
-                { $set: { to: username } },
-                { session }
-            );
-
-            // Commit transaction
-            await session.commitTransaction();
-            session.endSession();
-
-            res.status(200).json({
-                message: 'Username updated successfully',
-                user: updatedUser
-            });
-        } catch (error) {
-            // Roll back transaction if an error occurs
-            await session.abortTransaction();
-            session.endSession();
-            throw error;
-        }
-    } catch (err) {
-        console.error('Error updating username:', err);
-        res.status(500).json({ message: 'Failed to update username' });
+        res.status(200).json({
+            message: 'Profile updated successfully',
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        res.status(500).json({ message: 'Failed to update profile' });
     }
 });
 

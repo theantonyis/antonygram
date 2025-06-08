@@ -7,6 +7,8 @@ import Head from "next/head";
 
 const Register = () => {
     const [username, setUsername] = useState('');
+    const [name, setName] = useState('');
+    const [surname, setSurname] = useState('');
     const [password, setPassword] = useState('');
     const [passwordRepeat, setPasswordRepeat] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +24,7 @@ const Register = () => {
 
         // Remove all spaces (spaces, tabs, etc.) from input before sending
         const usernameNoSpaces = username.replace(/\s/g, '');
+        const nameNoSpaces = name.replace(/\s/g, '');
         const passwordNoSpaces = password.replace(/\s/g, '');
         const passwordRepeatNoSpaces = passwordRepeat.replace(/\s/g, '');
 
@@ -34,7 +37,12 @@ const Register = () => {
         try {
             const response = await api.post(
                 '/auth/register',
-                { username: usernameNoSpaces, password: passwordNoSpaces },
+                {
+                    username: usernameNoSpaces,
+                    name: nameNoSpaces,
+                    surname: surname.trim(),
+                    password: passwordNoSpaces
+                },
                 { withCredentials: true }
             );
 
@@ -82,6 +90,44 @@ const Register = () => {
                                     placeholder="Enter username"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
+                                    required
+                                    className="pl-10 pr-4 py-2 text-lg rounded-md border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                    style={{ paddingLeft: '2.5rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}
+                                />
+                            </div>
+                        </Form.Group>
+
+                        {/* Name with icon */}
+                        <Form.Group controlId="name" className="mb-4">
+                            <Form.Label className="text-gray-700">Name</Form.Label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                    <UserRound size={18} />
+                                </span>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Enter your name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                    className="pl-10 pr-4 py-2 text-lg rounded-md border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                    style={{ paddingLeft: '2.5rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}
+                                />
+                            </div>
+                        </Form.Group>
+
+                        {/* Surname with icon */}
+                        <Form.Group controlId="surname" className="mb-4">
+                            <Form.Label className="text-gray-700">Surname (optional)</Form.Label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                    <UserRound size={18} />
+                                </span>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Enter your surname"
+                                    value={surname}
+                                    onChange={(e) => setSurname(e.target.value)}
                                     required
                                     className="pl-10 pr-4 py-2 text-lg rounded-md border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
                                     style={{ paddingLeft: '2.5rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}

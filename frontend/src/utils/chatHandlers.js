@@ -426,8 +426,8 @@ export const handleGroupDeleted = ({
 };
 
 export const handleUserProfileUpdate = async ({
-  username,
-  originalUsername,
+  name,
+  surname,
   file,
   user,
   fileInputRef,
@@ -464,39 +464,30 @@ export const handleUserProfileUpdate = async ({
             }
         }
 
-        // Update username if changed
-        if (username !== originalUsername) {
-            try {
-                await api.put(`${backendURL}/api/users/update-username`, { username });
-            } catch (err) {
-                console.error('Username update failed:', err);
-                setError(err.response?.data?.message || 'Failed to update username');
-                setLoading(false);
-                return;
-            }
-        }
-
-        // Update avatar if changed
-        if (file) {
-            try {
-                await api.put(`${backendURL}/api/users/avatar`, {
-                    avatarUrl,
-                    blobName: file ? `${Date.now()}-${file.name}` : null
-                });
-            } catch (err) {
-                console.error('Avatar update failed:', err);
-                setError('Failed to update avatar');
-                setLoading(false);
-                return;
-            }
+        try {
+            await api.put(`${backendURL}/api/users/update-profile`, {
+                name,
+                surname,
+                avatarUrl: file ? avatarUrl : undefined,
+            });
+        } catch (err) {
+            console.error('Profile update failed:', err);
+            setError(err.response?.data?.message || 'Failed to update profile');
+            setLoading(false);
+            return;
         }
 
         // Call the callback with updated user
         onUserUpdate({
             ...user,
-            username,
+            name,
+            surname,
             avatar: avatarUrl
         });
+
+        if (fileInputRef && fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
 
         onHide();
     } catch (err) {
@@ -507,5 +498,36 @@ export const handleUserProfileUpdate = async ({
     }
 };
 
+export const handleUserUpdate = (updatedUser, user, setMessages) => {
+    if (user) {
+        Object.assign(user, {
+            name: updatedUser.name,
+            surname: updatedUser.surname,
+            avatar: updatedUser.avatar
+        });
+    }
+
+    // Update messages with new avatar if changed
+    if (updatedUser.avatar !== user.avatar) {
+        setMessages(prevMessages => prevMessages.map(msg => {
+            if (msg.from === user.username) {
+                return {
+                    ...msg,
+                    senderAvatar: updatedUser.avatar
+                };
+            }
+            return msg;
+        }));
+    }
+
+    // Update localStorage to persist changes between reloads
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    localStorage.setItem('user', JSON.stringify({
+        ...storedUser,
+        name: updatedUser.name,
+        surname: updatedUser.surname,
+        avatar: updatedUser.avatar
+    }));
+}
 
 

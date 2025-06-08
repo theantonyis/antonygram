@@ -31,7 +31,8 @@ import {
     selectContact,
     handleDeleteMessage,
     handleReplyMessage,
-    handleGroupDeleted
+    handleGroupDeleted,
+    handleUserUpdate
 } from '@utils/chatHandlers.js';
 
 const DEFAULT_AVATAR = '/def-avatar.png';
@@ -178,72 +179,6 @@ const Chat = () => {
     });
 
 
-    const handleUserUpdate = (updatedUser) => {
-        const oldUsername = user.username;
-        const newUsername = updatedUser.username;
-
-        // Update the user object in local state
-        if (user) {
-            Object.assign(user, {
-                avatar: updatedUser.avatar,
-                username: updatedUser.username
-            });
-        }
-
-        // Update contact list if username changed
-        if (oldUsername !== newUsername) {
-            setContactsList(prevContacts =>
-                prevContacts.map(contact => {
-                    if (contact.username === oldUsername) {
-                        return { ...contact, username: newUsername };
-                    }
-                    return contact;
-                })
-            );
-
-            // Update chat history keys
-            setChatHistory(prevHistory => {
-                const updatedHistory = {};
-                // Copy all existing conversations except the old username one
-                Object.keys(prevHistory).forEach(key => {
-                    if (key !== oldUsername) {
-                        updatedHistory[key] = prevHistory[key];
-                    }
-                });
-
-                // If there was a conversation with the old username, move it to the new username
-                if (prevHistory[oldUsername]) {
-                    updatedHistory[newUsername] = prevHistory[oldUsername];
-                }
-
-                return updatedHistory;
-            });
-        }
-
-        // Rest of your existing code for updating messages...
-        setMessages(prevMessages => prevMessages.map(msg => {
-            if (msg.from === oldUsername) {
-                return {
-                    ...msg,
-                    from: newUsername,
-                    senderAvatar: updatedUser.avatar
-                };
-            }
-            return msg;
-        }));
-
-        // Update the header avatar using the ref approach for reliability
-        const headerImage = document.querySelector('img[alt="User Avatar"]');
-        if (headerImage) {
-            headerImage.src = updatedUser.avatar || DEFAULT_AVATAR;
-        }
-
-        // Force refresh if username changed - usernames are referenced throughout the database
-        if (oldUsername !== newUsername) {
-            window.location.reload();
-        }
-    };
-
   const hydratedMessages = hydrateMessages(messages);
 
   useEffect(() => {
@@ -270,7 +205,10 @@ const Chat = () => {
                   style={{ cursor: 'pointer' }}
                   onClick={() => setShowProfileModal(true)}
               />
-            <strong>{user?.username}</strong>
+              <div>
+                  <div><strong>{user?.name || user?.username}</strong></div>
+                  {user?.name && <div className="text-muted small">@{user?.username}</div>}
+              </div>
           </Col>
           <Col className="text-end">
             <Button variant="outline-danger" onClick={onLogout}>
@@ -316,7 +254,7 @@ const Chat = () => {
                   width={32}
                   height={32}
                 />
-                <span className="fw-bold">{user?.username}</span>
+                <span className="fw-bold">{user?.name || user?.username}</span>
             </div>
             <Button variant="outline-danger" size="sm" onClick={onLogout}>
                 <LogOut size={16} />
@@ -400,7 +338,9 @@ const Chat = () => {
             show={showProfileModal}
             onHide={() => setShowProfileModal(false)}
             user={user}
-            onUserUpdate={handleUserUpdate}
+            onUserUpdate={(updatedUser) =>
+                handleUserUpdate(updatedUser, user, setMessages)
+            }
         />
     </>
   );

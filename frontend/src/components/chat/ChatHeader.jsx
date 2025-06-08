@@ -12,7 +12,10 @@ const ChatHeader = ({ contact }) => {
                 <Avatar avatar={contact.avatar} size={40} />
             </Col>
             <Col>
-                <h5 className="mb-0">{contact.username}</h5>
+                <h5 className="mb-0">
+                    {contact.name || contact.username}
+                    {contact.name && <small className="text-muted ms-2">@{contact.username}</small>}
+                </h5>
                 <small
                     className={contact.isOnline ? 'online-status' : 'text-muted'}
                 >
