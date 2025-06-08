@@ -7,7 +7,6 @@ export const hydrateMessages = (messages) => {
   messages.forEach(msg => { messageMap[msg._id] = msg; });
 
   return messages.map(msg => {
-    // Decrypt the main message text
     const decryptedText = msg.text ? decrypt(msg.text) : msg.text;
 
     if (msg.replyTo && typeof msg.replyTo === 'string' && messageMap[msg.replyTo]) {
