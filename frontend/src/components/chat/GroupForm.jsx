@@ -43,7 +43,7 @@ const GroupCreationForm = ({ show, onHide, contacts = [], onGroupCreated, user }
         const data = {
             name: groupName,
             members: memberIds,
-            // Omit avatar if not set or leave as undefined
+            creator: user._id,
         };
 
         try {

@@ -34,11 +34,20 @@ router.post('/', auth, async (req, res) => {
             members.push(userId);
         }
 
-        const group = new Group({ name, members, avatar });
+        const group = new Group({
+            name,
+            members,
+            avatar,
+            creator: userId
+        });
+
         await group.save();
 
         // Return the populated group to the client
-        const populatedGroup = await Group.findById(group._id).populate('members', 'username email avatar');
+        const populatedGroup = await Group.findById(group._id)
+            .populate('members', 'username email avatar')
+            .populate('creator', 'username email avatar');
+
         res.status(201).json(populatedGroup);
     } catch (err) {
         console.error('Create group error:', err);
@@ -50,7 +59,9 @@ router.post('/', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
     try {
         const userId = req.user.userId;
-        const groups = await Group.find({members: userId}).populate('members', 'username email avatar');
+        const groups = await Group.find({members: userId})
+            .populate('members', 'username email avatar')
+            .populate('creator', 'username email avatar');
         res.json(groups);
     } catch (err) {
         console.error('Get groups error:', err);
@@ -62,7 +73,9 @@ router.get('/:groupId', auth, async (req, res) => {
     const { groupId } = req.params;
 
     try {
-        const group = await Group.findById(groupId).populate('members', 'username email avatar');
+        const group = await Group.findById(groupId)
+            .populate('members', 'username email avatar')
+            .populate('creator', 'username email avatar');
         if (!group) {
             return res.status(404).json({ error: 'Group not found' });
         }
@@ -148,6 +161,7 @@ router.post('/:groupId/remove-member', auth, async (req, res) => {
 // DELETE a group
 router.delete('/:groupId', auth, async (req, res) => {
     const { groupId } = req.params;
+    const userId = req.user.userId;
 
     try {
         const group = await Group.findById(groupId);
@@ -155,13 +169,9 @@ router.delete('/:groupId', auth, async (req, res) => {
             return res.status(404).json({ error: 'Group not found' });
         }
 
-        // Safe check for user membership with null handling
-        const isMember = group.members && group.members.some(memberId =>
-            memberId && req.user && req.user.userId && memberId.equals(req.user.userId)
-        );
-
-        if (!isMember) {
-            return res.status(403).json({ error: 'Not authorized to delete this group' });
+        // Check if the user is the creator
+        if (group.creator && group.creator.toString() !== userId) {
+            return res.status(403).json({ error: 'Only the group creator can delete this group' });
         }
 
         await Group.deleteOne({ _id: groupId });

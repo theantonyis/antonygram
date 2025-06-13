@@ -20,6 +20,7 @@ import MessageInput from '@components/chat/MessageInput.jsx';
 import GroupChat from '@components/chat/GroupChat.jsx';
 import DeleteContactModal from '@components/chat/DeleteContactModal.jsx';
 import ProfileSettingsModal from "@components/user/ProfileSettingsModal.jsx";
+import DeleteGroupModal from '@components/chat/DeleteGroupModal.jsx';
 import api from '@utils/axios.js';
 
 import {
@@ -31,6 +32,7 @@ import {
     selectContact,
     handleDeleteMessage,
     handleReplyMessage,
+    handleDeleteGroup,
     handleGroupDeleted,
     handleUserUpdate
 } from '@utils/chatHandlers.js';
@@ -57,6 +59,8 @@ const Chat = () => {
     const [replyTo, setReplyTo] = useState(null);
     const [selectedGroup, setSelectedGroup] = useState(null);
     const { groups, refreshGroups } = useGroups();
+    const [showGroupDeleteModal, setShowGroupDeleteModal] = useState(false);
+    const [groupToDelete, setGroupToDelete] = useState(null);
 
     const selectedContactRef = useRef(selectedContact);
 
@@ -170,13 +174,41 @@ const Chat = () => {
         setReplyTo,
     });
 
-  const onGroupDeleted = (groupId) =>
-    handleGroupDeleted({
-        groupId,
-        selectedContact,
-        setGroups,
-        setSelectedContact
-    });
+    const onDeleteGroup = (group) => {
+        setGroupToDelete(group);
+        setShowGroupDeleteModal(true);
+    };
+
+    const groupDeletionConfirmedHandler = (groupId) => {
+        handleGroupDeleted({
+            groupId,
+            selectedContact,
+            refreshGroupsCallback: refreshGroups, // Pass refreshGroups here
+            setSelectedContact
+        });
+    };
+
+    const onConfirmDeleteGroup = async () => {
+        if (groupToDelete) {
+            try {
+                await handleDeleteGroup({
+                    groupId: groupToDelete._id,
+                    setGroup: setSelectedGroup, // Clears the detailed group view if it was the one deleted
+                    onGroupDeleted: groupDeletionConfirmedHandler // Use the new handler
+                });
+                setGroupToDelete(null);
+                setShowGroupDeleteModal(false);
+            } catch (err) {
+                // Error handling for handleDeleteGroup itself, if any, beyond what it handles
+                console.error('Error during group deletion process:', err);
+            }
+        }
+    };
+
+    const onCloseGroupDeleteModal = () => {
+        setGroupToDelete(null);
+        setShowGroupDeleteModal(false);
+    };
 
 
   const hydratedMessages = hydrateMessages(messages);
@@ -231,7 +263,7 @@ const Chat = () => {
               onDeleteContact={onDeleteContact}
               showContacts={showContacts}
               setShowContacts={setShowContacts}
-              onGroupDeleted={onGroupDeleted}
+              onGroupDeleted={groupDeletionConfirmedHandler()}
               refreshGroups={refreshGroups}
           >
           <ToastContainer position="top-right" autoClose={3000} />
@@ -293,6 +325,8 @@ const Chat = () => {
                           onReplyMessage={msg => setReplyTo(msg)}
                           replyTo={replyTo}
                           onCancelReply={() => setReplyTo(null)}
+                          onDeleteGroup={onDeleteGroup}
+                          onGroupDeleted={groupDeletionConfirmedHandler}
                       />
                 ) : (
                     <>
@@ -341,6 +375,12 @@ const Chat = () => {
             onUserUpdate={(updatedUser) =>
                 handleUserUpdate(updatedUser, user, setMessages)
             }
+        />
+        <DeleteGroupModal
+            show={showGroupDeleteModal}
+            group={groupToDelete}
+            onHide={onCloseGroupDeleteModal}
+            onConfirm={onConfirmDeleteGroup}
         />
     </>
   );

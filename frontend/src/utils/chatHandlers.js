@@ -396,7 +396,7 @@ export const handleRemoveGroupMember = async ({
 
 export const handleDeleteGroup = async ({ groupId, setGroup, onGroupDeleted }) => {
     try {
-        await api.delete(`/groups/${groupId}`);
+        await api.delete(`${backendURL}/api/groups/${groupId}`);
 
         // Reset local state
         if (setGroup) setGroup(null);
@@ -413,12 +413,12 @@ export const handleDeleteGroup = async ({ groupId, setGroup, onGroupDeleted }) =
 export const handleGroupDeleted = ({
    groupId,
    selectedContact,
-   setGroups,
+   refreshGroupsCallback,
    setSelectedContact
 }) => {
-    if (!groupId || typeof setGroups !== 'function') return;
+    if (!groupId || typeof refreshGroupsCallback !== 'function') return;
 
-    setGroups(prev => prev.filter(g => g._id !== groupId));
+    refreshGroupsCallback();
 
     if (selectedContact?.groupId === groupId && typeof setSelectedContact === 'function') {
         setSelectedContact(null);
