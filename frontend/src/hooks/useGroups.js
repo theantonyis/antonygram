@@ -17,7 +17,14 @@ export default function useGroups() {
         fetchingRef.current = true;
         try {
             const res = await api.get(`${backendURL}/api/groups`);
-            setGroups(res.data); // or setGroups(res.data.groups) if your API wraps array
+            setGroups(res.data.map(group => {
+                const members = Array.isArray(group.members) ? group.members : [];
+
+                return {
+                    ...group,
+                    members
+                };
+            }));
         } catch (error) {
             console.error("Failed to fetch groups", error);
             setGroups([]); // Optionally clear groups on error

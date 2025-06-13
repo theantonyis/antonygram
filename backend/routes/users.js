@@ -88,4 +88,28 @@ router.put('/avatar', auth, async (req, res) => {
     }
 });
 
+router.get('/search', async (req, res) => {
+    try {
+        const searchQuery = req.query.q;
+
+        if (!searchQuery || searchQuery.length < 2) {
+            return res.status(400).json({ message: 'Search query must be at least 2 characters' });
+        }
+
+        // Search by username, name, or surname (case insensitive)
+        const users = await User.find({
+            $or: [
+                { username: { $regex: searchQuery, $options: 'i' } },
+                { name: { $regex: searchQuery, $options: 'i' } },
+                { surname: { $regex: searchQuery, $options: 'i' } }
+            ]
+        }).select('username name surname avatar').limit(10);
+
+        return res.json({ users });
+    } catch (error) {
+        console.error('User search error:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+});
+
 export default router;

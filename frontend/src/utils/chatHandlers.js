@@ -361,17 +361,27 @@ export const handleAddGroupMember = async ({
 }) => {
     if (!username || !groupId) return;
     try {
-        const res = await api.post(`${backendURL}/api/groups/${groupId}/add-member`, { username });
+        const response = await api.post(`${backendURL}/api/groups/${groupId}/add-member`, { username });
 
-        if (res.data.success && res.data.group) {
-            if (typeof setGroup === 'function') {
-                setGroup(res.data.group);
-            }
+        // Get the updated group with populated members & creator
+        const updatedGroup = response.data.group;
 
-            // Immediately refresh the groups list to update member count
-            if (typeof refreshGroups === 'function') {
-                refreshGroups();
-            }
+        if (typeof setGroup === 'function') {
+            setGroup(prevGroup => {
+                // If we have creator as an object in prev state, preserve it
+                if (prevGroup?.creator && typeof prevGroup.creator === 'object') {
+                    return {
+                        ...updatedGroup,
+                        creator: prevGroup.creator
+                    };
+                }
+                return updatedGroup;
+            });
+        }
+
+        // Refresh groups list if callback provided
+        if (typeof refreshGroups === 'function') {
+            refreshGroups();
         }
     } catch (error) {
         console.error('Failed to add member:', error);
@@ -399,7 +409,16 @@ export const handleRemoveGroupMember = async ({
 
         if (res.data.success && res.data.group) {
             if (typeof setGroup === 'function') {
-                setGroup(res.data.group);
+                setGroup(prevGroup => {
+                    // If we have creator as an object in prev state, preserve it
+                    if (prevGroup?.creator && typeof prevGroup.creator === 'object') {
+                        return {
+                            ...res.data.group,
+                            creator: prevGroup.creator
+                        };
+                    }
+                    return res.data.group;
+                });
             }
 
             // Immediately refresh the groups list to update member count

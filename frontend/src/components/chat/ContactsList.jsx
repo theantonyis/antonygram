@@ -70,22 +70,60 @@ const ContactsList = ({
     }, [addContactInput, showPreview, previewResults.length]);
 
     useEffect(() => {
-        if (!socket) return;
+        if (!socket || !user) return;
         // Listen for group-related events
-        const refresh = () => doRefreshGroups();
+        const refresh = () => {
+            // Use the correct function based on what you have
+            if (typeof refreshGroups === 'function') {
+                refreshGroups();
+            } else if (typeof doRefreshGroups === 'function') {
+                doRefreshGroups();
+            }
+        };
+
         socket.on('groupCreated', refresh);
         socket.on('groupUpdated', refresh);
         socket.on('groupDeleted', refresh);
         socket.on('addedToGroup', refresh);
         socket.on('removedFromGroup', refresh);
+
+        socket.on('message', (msg) => {
+            // Make sure selectedContact exists before checking its properties
+            if (!selectedContact) {
+                // If no contact is selected, always increment unread
+                const messageTargetId = msg.isGroup ? msg.to : (msg.from === user.username ? msg.to : msg.from);
+
+                // Don't increment unread for messages sent by the current user
+                if (msg.from !== user.username) {
+                    setUnreadCounts(prev => ({
+                        ...prev,
+                        [messageTargetId]: (prev[messageTargetId] || 0) + 1
+                    }));
+                }
+                return;
+            }
+
+            const currentId = selectedContact.groupId || selectedContact.username;
+            const messageTargetId = msg.isGroup ? msg.to : (msg.from === user.username ? msg.to : msg.from);
+
+            // If message isn't for current conversation and isn't from current user
+            if (messageTargetId !== currentId && msg.from !== user.username) {
+                setUnreadCounts(prev => ({
+                    ...prev,
+                    [messageTargetId]: (prev[messageTargetId] || 0) + 1
+                }));
+            }
+        });
+
         return () => {
             socket.off('groupCreated', refresh);
             socket.off('groupUpdated', refresh);
             socket.off('groupDeleted', refresh);
             socket.off('addedToGroup', refresh);
             socket.off('removedFromGroup', refresh);
+            socket.off('message');
         };
-    }, [socket, doRefreshGroups]);
+    }, [socket, doRefreshGroups, refreshGroups, selectedContact, user]);
 
     return (
         <div>
@@ -210,11 +248,9 @@ const ContactsList = ({
                                                 </span>
                                             )}
                                         </div>
-                                        <small className="text-muted">
-                                            <span className={isSelected ? 'fw-bold text-white' : ''}>
-                                                {Array.isArray(group.members) ? group.members.length : 0} member
-                                                {(!Array.isArray(group.members) || group.members.length !== 1) ? 's' : ''}
-                                            </span>
+                                        <small className={isSelected ? 'fw-bold text-white' : 'text-muted'}>
+                                            {Array.isArray(group.members) ? group.members.length : 0} member
+                                            {Array.isArray(group.members) && group.members.length === 1 ? '' : 's'}
                                         </small>
                                     </div>
                                 </div>
