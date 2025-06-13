@@ -5,7 +5,8 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { Row, Col, Button, Form, Modal, ListGroup, Badge } from 'react-bootstrap';
 import { handleAddGroupMember, handleDeleteGroup, handleRemoveGroupMember } from '@utils/chatHandlers';
-import { decrypt } from "@utils/aes256.js";
+import { hydrateMessages } from '@utils/hydrateMessage.js';
+import { decrypt } from '@utils/aes256';
 
 const AVATAR_SIZE = 38;
 
@@ -78,20 +79,7 @@ const GroupChat = ({
       ? group.members
       : [];
 
-  const decryptedMessages = Array.isArray(messages)
-      ? messages.map(msg => ({
-        ...msg,
-        text: (() => {
-          if (!msg.text || msg.deleted) return '';
-          try {
-            return decrypt(msg.text);
-          } catch (err) {
-            console.error("Decryption failed for message:", msg.text);
-            return '[Encrypted]'; // fallback text
-          }
-        })()
-      }))
-      : [];
+  const hydratedMessages = hydrateMessages(Array.isArray(messages) ? messages : []);
 
   return (
       <div className="d-flex flex-column h-100">
@@ -131,7 +119,7 @@ const GroupChat = ({
         {/* Messages */}
         <div className="flex-grow-1 overflow-auto d-flex flex-column justify-content-end px-0">
           <MessageList
-              messages={decryptedMessages}
+              messages={hydratedMessages}
               currentUser={currentUser}
               onDeleteMessage={(msg) => {
                   if (onDeleteMessage) {

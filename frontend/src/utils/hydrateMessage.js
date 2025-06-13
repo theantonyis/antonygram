@@ -19,17 +19,23 @@ export const hydrateMessages = (messages) => {
           from: replyMsg.from,
           text: replyMsg.text ? decrypt(replyMsg.text) : replyMsg.text,
           senderAvatar: replyMsg.senderAvatar,
-          deleted: replyMsg.deleted
+          deleted: replyMsg.deleted,
+          file: replyMsg.file
         },
       };
     }
 
     if (msg.replyTo && typeof msg.replyTo === 'object' && msg.replyTo.from) {
+      const replyText = msg.replyTo.text && typeof msg.replyTo.text === 'string'
+          ? decrypt(msg.replyTo.text)
+          : msg.replyTo.text;
+
       return {
         ...msg,
         text: decryptedText,
         replyTo: {
           ...msg.replyTo,
+          text: replyText,
         },
       };
     }
