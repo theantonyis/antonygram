@@ -30,19 +30,19 @@ const GroupInfoModal = ({
         await handleAddGroupMember({
             groupId: group._id,
             username: newMemberUsername.trim(),
-            setGroup
+            setGroup,
+            refreshGroups
         });
         setNewMemberUsername('');
-        refreshGroups();
     };
 
     const handleRemoveMember = async (username) => {
         await handleRemoveGroupMember({
             groupId: group._id,
             username,
-            setGroup
+            setGroup,
+            refreshGroups
         });
-        refreshGroups();
     };
 
     const handleLeaveGroup = async () => {
@@ -58,7 +58,7 @@ const GroupInfoModal = ({
     if (!group) return null;
 
     return (
-        <Modal show={show} onHide={onHide} centered>
+        <Modal show={show} onHide={onHide} centered backdropClassName="modal-backdrop-dark">
             <Modal.Header closeButton>
                 <div className="d-flex align-items-center" style={{ gap: '12px' }}>
                     <Avatar

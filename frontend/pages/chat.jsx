@@ -188,20 +188,26 @@ const Chat = () => {
         });
     };
 
-    const onConfirmDeleteGroup = async () => {
-        if (groupToDelete) {
-            try {
-                await handleDeleteGroup({
-                    groupId: groupToDelete._id,
-                    setGroup: setSelectedGroup, // Clears the detailed group view if it was the one deleted
-                    onGroupDeleted: groupDeletionConfirmedHandler // Use the new handler
-                });
-                setGroupToDelete(null);
-                setShowGroupDeleteModal(false);
-            } catch (err) {
-                // Error handling for handleDeleteGroup itself, if any, beyond what it handles
-                console.error('Error during group deletion process:', err);
-            }
+    const onConfirmDeleteGroup = async (groupToDelete) => {
+        if (!groupToDelete || !groupToDelete._id) return;
+
+        try {
+            await handleDeleteGroup({
+                groupId: groupToDelete._id,
+                setGroup,
+                onGroupDeleted: (deletedGroupId) => {
+                    handleGroupDeleted({
+                        groupId: deletedGroupId,
+                        selectedContact,
+                        refreshGroupsCallback: refreshGroups,
+                        setSelectedContact,
+                        setGroups
+                    });
+                }
+            });
+        } catch (err) {
+            // Error handling for handleDeleteGroup itself, if any, beyond what it handles
+            console.error('Error during group deletion process:', err);
         }
     };
 
@@ -263,7 +269,7 @@ const Chat = () => {
               onDeleteContact={onDeleteContact}
               showContacts={showContacts}
               setShowContacts={setShowContacts}
-              onGroupDeleted={groupDeletionConfirmedHandler()}
+              onGroupDeleted={groupDeletionConfirmedHandler}
               refreshGroups={refreshGroups}
           >
           <ToastContainer position="top-right" autoClose={3000} />

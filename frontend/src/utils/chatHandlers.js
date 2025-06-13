@@ -357,16 +357,26 @@ export const handleAddGroupMember = async ({
     groupId,
     username,
     setGroup,
+    refreshGroups
 }) => {
     if (!username || !groupId) return;
     try {
         const res = await api.post(`${backendURL}/api/groups/${groupId}/add-member`, { username });
-        if (setGroup && typeof setGroup === 'function') {
-            setGroup(res.data.group);
+
+        if (res.data.success && res.data.group) {
+            if (typeof setGroup === 'function') {
+                setGroup(res.data.group);
+            }
+
+            // Immediately refresh the groups list to update member count
+            if (typeof refreshGroups === 'function') {
+                refreshGroups();
+            }
         }
     } catch (error) {
-        console.error('Failed to add member:', error.response?.data || error.message);
-        alert(error.response?.data?.error || 'Failed to add member');
+        console.error('Failed to add member:', error);
+        const errorMsg = error.response?.data?.error || 'Failed to add member';
+        toast.error(errorMsg);
     }
 };
 
@@ -381,32 +391,65 @@ export const handleRemoveGroupMember = async ({
     groupId,
     username,
     setGroup,
+    refreshGroups
 }) => {
     if (!username || !groupId) return;
     try {
         const res = await api.post(`${backendURL}/api/groups/${groupId}/remove-member`, { username });
-        if (setGroup && typeof setGroup === 'function') {
-            setGroup(res.data.group);
+
+        if (res.data.success && res.data.group) {
+            if (typeof setGroup === 'function') {
+                setGroup(res.data.group);
+            }
+
+            // Immediately refresh the groups list to update member count
+            if (typeof refreshGroups === 'function') {
+                refreshGroups();
+            }
         }
     } catch (error) {
-        console.error('Failed to remove member:', error.response?.data || error.message);
-        alert(error.response?.data?.error || 'Failed to remove member');
+        console.error('Failed to remove member:', error);
+        const errorMsg = error.response?.data?.error || 'Failed to remove member';
+        toast.error(errorMsg);
     }
 };
 
-export const handleDeleteGroup = async ({ groupId, setGroup, onGroupDeleted }) => {
+/**
+ * Handles deleting a group.
+ * @param {object} params
+ * @param {string} params.groupId - The ID of the group to delete.
+ * @param {function} params.setGroup - State setter for the current group.
+ * @param {function} params.onGroupDeleted - Callback when group is deleted.
+ * @returns {Promise<void>}
+ */
+export const handleDeleteGroup = async ({
+    groupId,
+    setGroup,
+    onGroupDeleted,
+    setGroups
+}) => {
+    if (!groupId) return;
+
     try {
+        // Call API to delete the group
         await api.delete(`${backendURL}/api/groups/${groupId}`);
 
-        // Reset local state
-        if (setGroup) setGroup(null);
+        // Update UI by clearing the current group selection
+        if (typeof setGroup === 'function') {
+            setGroup(null);
+        }
 
-        if (onGroupDeleted) onGroupDeleted(groupId);
+        if (typeof setGroups === 'function') {
+            setGroups(prevGroups => prevGroups.filter(group => group._id !== groupId));
+        }
 
-        toast.success('Group deleted successfully');
-    } catch (err) {
-        console.error('Delete group error:', err);
-        alert(err.response?.data?.error || err.message || 'Failed to delete group');
+        // Notify parent components about deletion
+        if (typeof onGroupDeleted === 'function') {
+            onGroupDeleted(groupId);
+        }
+    } catch (error) {
+        console.error('Failed to delete group:', error);
+        toast.error(error.response?.data?.error || 'Failed to delete group');
     }
 };
 
@@ -414,11 +457,20 @@ export const handleGroupDeleted = ({
    groupId,
    selectedContact,
    refreshGroupsCallback,
-   setSelectedContact
+   setSelectedContact,
+   setGroups
 }) => {
-    if (!groupId || typeof refreshGroupsCallback !== 'function') return;
+    if (!groupId) return;
 
-    refreshGroupsCallback();
+    // Immediately remove the group from the local state
+    if (typeof setGroups === 'function') {
+        setGroups(prevGroups => prevGroups.filter(group => group._id !== groupId));
+    }
+
+    // Also refresh from backend
+    if (typeof refreshGroupsCallback === 'function') {
+        refreshGroupsCallback();
+    }
 
     if (selectedContact?.groupId === groupId && typeof setSelectedContact === 'function') {
         setSelectedContact(null);
