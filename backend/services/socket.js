@@ -10,6 +10,7 @@ export const onlineUsers = new Map();
 export const initSocket = async (server, ioOptions) => {
     const io = new Server(server, ioOptions);
 
+
     io.use((socket, next) => {
         const token = socket.handshake.auth?.token;
         if (!token) return next(new Error("No token"));
