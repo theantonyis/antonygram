@@ -264,6 +264,7 @@ const Chat = () => {
               addContactInput={addContactInput}
               setAddContactInput={setAddContactInput}
               unreadCounts={unreadCounts}
+              setUnreadCounts={setUnreadCounts}
               onAddContact={onAddContact}
               onClearChat={onClearChat}
               onDeleteContact={onDeleteContact}

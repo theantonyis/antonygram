@@ -1,5 +1,5 @@
 import React, {useState, useRef, useEffect} from 'react';
-import { ListGroup, Form, Button, Dropdown } from 'react-bootstrap';
+import { ListGroup, Form, Button, Dropdown, Badge } from 'react-bootstrap';
 import { UserMinus, Plus, MoreVertical, Trash2, Users } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import dayjs from 'dayjs';
@@ -262,18 +262,25 @@ const ContactsList = ({
                     {contacts.map((contact) => {
                         const isOnline = contact.isOnline;
                         const isSelected = selectedContact?.username === contact.username;
-                        const unread = unreadCounts[contact.username] || 0;
+                        const unread = unreadCounts[contact.id] || 0;
 
                         return (
                             <ListGroup.Item
                                 as="div"
                                 key={contact.username}
                                 action
-                                active={isSelected}
-                                onClick={() => onSelectContact(contact)}
+                                active={selectedContact?.username === contact.username}
+                                onClick={() => onSelectContact({
+                                    type: 'contact',
+                                    id: contact.username,
+                                    username: contact.username,
+                                    avatar: contact.avatar,
+                                    lastSeen: contact.lastSeen,
+                                    isOnline: contact.isOnline
+                                })}
                                 className="d-flex justify-content-between align-items-center cursor-pointer"
                             >
-                                <div className="d-flex align-items-center">
+                            <div className="d-flex align-items-center">
                                     <Avatar avatar={contact.avatar} size={32} />
                                     <div className="ms-2">
                                         <div>

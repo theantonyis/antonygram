@@ -2,19 +2,17 @@ import { useEffect } from "react";
 import { toast } from 'react-toastify';
 import { decrypt } from "@utils/aes256";
 
-
 export default function useSocketMessages(socket, user, selectedContactRef, setChatHistory, setMessages, unreadCounts, setUnreadCounts) {
     useEffect(() => {
         if (!socket || !user) return;
 
         const messageHandler = (incoming) => {
-            const {from, to, text, timestamp, senderAvatar, replyTo, clientId} = incoming;
-            const contact = from === user.username ? to : from;
+            const { from, to, text, timestamp, senderAvatar, replyTo, clientId } = incoming;
             const isOwn = from === user.username;
             const isGroup = incoming.isGroup || false;
-            const contactKey = isGroup ? to : contact;
 
-            // Normalize for MessageList fields
+            const contactKey = isGroup ? to : (from === user.username ? to : from);
+
             const formattedMessage = {
                 ...incoming,
                 senderAvatar: senderAvatar || (isOwn ? user.avatar : null),
@@ -23,12 +21,9 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
 
             setChatHistory(prev => {
                 const existingMessages = prev[contactKey] || [];
-
-                // Filter out any temporary messages with matching clientId
                 const filteredMessages = clientId
                     ? existingMessages.filter(msg => msg.clientId !== clientId)
                     : existingMessages;
-
                 return {
                     ...prev,
                     [contactKey]: [...filteredMessages, formattedMessage]
@@ -36,36 +31,36 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
             });
 
             const selectedContact = selectedContactRef.current;
-            const isSelected = selectedContact &&
-                (isGroup ?
-                    selectedContact.groupId === to :
-                    selectedContact.username === contact);
+            let selectedKey = null;
 
-            if (isSelected) {
+            if (selectedContact) {
+                if (selectedContact.groupId) {
+                    selectedKey = selectedContact.groupId;
+                } else if (selectedContact.username) {
+                    selectedKey = selectedContact.username;
+                }
+            }
+
+            if (selectedContact && selectedKey === contactKey) {
                 setMessages(prev => {
-                    // Remove temporary messages with the same clientId if exists
-                    const filtered = prev.filter(msg =>
-                        !(clientId && msg.clientId === clientId)
-                    );
-
+                    const filtered = clientId ? prev.filter(msg => msg.clientId !== clientId) : prev;
                     return [...filtered, formattedMessage];
                 });
             } else if (!isOwn) {
-                // Update unread counts for incoming messages
-                setUnreadCounts(prev => {
-                    // For group messages, use the "to" field (groupId)
-                    // For direct messages, use the "from" field (username)
-                    const contactIdentifier = isGroup ? to : from;
-                    return {
-                        ...prev,
-                        [contactIdentifier]: (prev[contactIdentifier] || 0) + 1
-                    };
-                });
+                setUnreadCounts(prev => ({
+                    ...prev,
+                    [contactKey]: (prev[contactKey] || 0) + 1
+                }));
+
+                toast.info(
+                    isGroup
+                        ? `New message in group "${incoming.groupName || to}" from ${from}`
+                        : `New message from ${from}`
+                );
             }
         };
 
         socket.on('message', messageHandler);
-
         return () => socket.off('message', messageHandler);
     }, [socket, user, setChatHistory, setMessages, setUnreadCounts, selectedContactRef]);
 }
