@@ -91,6 +91,22 @@ export const initSocket = async (server, ioOptions) => {
             }
         });
 
+        socket.on('deleteMessage', async ({ messageId, clientId, to, isGroup }) => {
+            // Mark the message as deleted in DB
+            await Message.findByIdAndUpdate(messageId, { deleted: true });
+
+            // Prepare the payload
+            const payload = { messageId, clientId, from: socket.username, to, isGroup: true };
+
+            // Emit to the correct room/group
+            if (isGroup) {
+                io.to(to).emit('messageDeleted', payload);
+            } else {
+                const roomName = [socket.username, to].sort().join('_');
+                io.to(roomName).emit('messageDeleted', payload);
+            }
+        });
+
         socket.on('disconnect', async() => {
             console.log(`❌ ${socket.username} disconnected`);
             if (socket.username) {

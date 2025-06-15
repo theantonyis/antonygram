@@ -255,6 +255,10 @@ export const selectContact = ({
  * @param {function} params.setMessages - State setter for messages.
  */
 export const handleDeleteMessage = async ({
+    socket,
+    msg,
+    contactKey,
+    isGroup,
     msgToDelete,
     selectedContact,
     setChatHistory,
@@ -316,6 +320,8 @@ export const handleDeleteMessage = async ({
             return msg;
         })
     );
+
+    socket.emit('deleteMessage', { messageId: msgToDelete._id, to: contactKey, isGroup });
 };
 
 /**

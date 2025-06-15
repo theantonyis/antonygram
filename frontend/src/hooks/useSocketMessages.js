@@ -61,7 +61,27 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
             }
         };
 
+        const handleMessageDeleted = async ({ messageId, to, isGroup }) => {
+            // Mark the message as deleted in DB
+            await Message.findByIdAndUpdate(messageId, { deleted: true });
+
+            // Prepare the payload
+            const payload = { messageId, clientId, from: socket.username, to, isGroup: true };
+
+            // Emit to the correct room/group
+            if (isGroup) {
+                io.to(to).emit('messageDeleted', payload);
+            } else {
+                const roomName = [socket.username, to].sort().join('_');
+                io.to(roomName).emit('messageDeleted', payload);
+            }
+        };
+
         socket.on('message', messageHandler);
-        return () => socket.off('message', messageHandler);
+        socket.on('messageDeleted', handleMessageDeleted);
+        return () => {
+            socket.off('message', messageHandler);
+            socket.off('messageDeleted', handleMessageDeleted);
+        }
     }, [socket, user, setChatHistory, setMessages, setUnreadCounts, selectedContactRef]);
 }
