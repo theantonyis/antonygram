@@ -161,13 +161,23 @@ const Chat = () => {
   };
 
     // Replace onDeleteMessage to use the cascade function instead:
-    const onDeleteMessage = (msg) =>
+    const onDeleteMessage = (msg) => {
+        const isGroup = selectedContact?.groupId !== undefined;
+        const to = isGroup
+            ? selectedContact.groupId
+            : (msg.to === user.username ? msg.from : msg.to);
+
         handleDeleteMessage({
+            socket,
+            messageId: msg._id,
+            to,
+            isGroup,
             msgToDelete: msg,
             selectedContact,
             setChatHistory,
             setMessages,
-    });
+        });
+    }
 
   const onReplyMessage = (msg) =>
     handleReplyMessage({

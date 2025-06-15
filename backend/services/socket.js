@@ -10,6 +10,7 @@ export const onlineUsers = new Map();
 export const initSocket = async (server, ioOptions) => {
     const io = new Server(server, ioOptions);
 
+
     io.use((socket, next) => {
         const token = socket.handshake.auth?.token;
         if (!token) return next(new Error("No token"));
@@ -88,6 +89,22 @@ export const initSocket = async (server, ioOptions) => {
             } else {
                 const roomName = [socket.username, to].sort().join('_');
                 io.to(roomName).emit('message', messageData);
+            }
+        });
+
+        socket.on('deleteMessage', async ({ messageId, clientId, to, isGroup }) => {
+            // Mark the message as deleted in DB
+            await Message.findByIdAndUpdate(messageId, { deleted: true });
+
+            // Prepare the payload
+            const payload = { messageId, clientId, from: socket.username, to, isGroup: true };
+
+            // Emit to the correct room/group
+            if (isGroup) {
+                io.to(to).emit('messageDeleted', payload);
+            } else {
+                const roomName = [socket.username, to].sort().join('_');
+                io.to(roomName).emit('messageDeleted', payload);
             }
         });
 
