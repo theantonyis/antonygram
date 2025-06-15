@@ -284,7 +284,6 @@ const Chat = () => {
               onGroupDeleted={groupDeletionConfirmedHandler}
               refreshGroups={refreshGroups}
           >
-          <ToastContainer position="top-right" autoClose={3000} />
           <div className="d-flex align-items-center justify-content-between py-2 px-3 d-flex d-md-none" style={{ marginTop: 8 }}>
             <div className="d-flex align-items-center gap-2">
                 <Button

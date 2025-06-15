@@ -243,9 +243,9 @@ const ContactsList = ({
                                         <div>
                                             {group.name}
                                             {unread > 0 && (
-                                                <span className="badge bg-danger ms-2" title={`${unread} unread`}>
+                                                <Badge bg="danger" pill className="ms-2">
                                                     {unread}
-                                                </span>
+                                                </Badge>
                                             )}
                                         </div>
                                         <small className={isSelected ? 'fw-bold text-white' : 'text-muted'}>
@@ -262,7 +262,7 @@ const ContactsList = ({
                     {contacts.map((contact) => {
                         const isOnline = contact.isOnline;
                         const isSelected = selectedContact?.username === contact.username;
-                        const unread = unreadCounts[contact.username] || 0;
+                        const unread = unreadCounts[contact.id || contact.username] || 0;
 
                         return (
                             <ListGroup.Item
@@ -286,9 +286,9 @@ const ContactsList = ({
                                         <div>
                                             {contact.username}
                                             {unread > 0 && (
-                                                <span className="badge bg-danger ms-2" title={`${unread} unread`}>
+                                                <Badge bg="danger" pill className="ms-2">
                                                     {unread}
-                                                </span>
+                                                </Badge>
                                             )}
                                         </div>
                                         <small
