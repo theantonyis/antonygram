@@ -7,7 +7,7 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
         if (!socket || !user) return;
 
         const messageHandler = (incoming) => {
-            const { from, to, text, timestamp, senderAvatar, replyTo, clientId } = incoming;
+            const { from, to, text, timestamp, senderAvatar, replyTo, clientId, file } = incoming;
             const isOwn = from === user.username;
             const isGroup = incoming.isGroup || false;
 
@@ -17,6 +17,7 @@ export default function useSocketMessages(socket, user, selectedContactRef, setC
                 ...incoming,
                 senderAvatar: senderAvatar || (isOwn ? user.avatar : null),
                 timestamp: timestamp || new Date(),
+                file
             };
 
             setChatHistory(prev => {

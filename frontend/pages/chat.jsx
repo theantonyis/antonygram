@@ -83,6 +83,7 @@ const Chat = () => {
             setChatHistory,
             replyTo,
             file: fileData,
+            isGroup: !!selectedContact?.groupId,
         });
         setReplyTo(null);
     };
@@ -307,7 +308,7 @@ const Chat = () => {
                           messages={chatHistory[selectedContact.groupId] || []}
                           refreshGroups={refreshGroups}
                           currentUser={user}
-                          onSendMessage={text => {
+                          onSendMessage={(text, file) => {
                               handleSend({
                                   input: text,
                                   selectedContact,
@@ -317,6 +318,7 @@ const Chat = () => {
                                   setMessages,
                                   setChatHistory,
                                   replyTo,
+                                  file,
                                   isGroup: true, // Add this flag for clarity in your handler
                               });
                               setReplyTo(null);

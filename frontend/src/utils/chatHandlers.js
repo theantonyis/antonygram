@@ -30,9 +30,9 @@ export const handleSend = async ({
     selectedContact,
     user,
     socket,
+    setInput,
     setMessages,
     setChatHistory,
-    setInput,
     replyTo,
     file,
 }) => {

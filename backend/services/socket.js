@@ -96,7 +96,6 @@ export const initSocket = async (server, ioOptions) => {
             if (socket.username) {
                 onlineUsers.delete(socket.username);
 
-                // ✅ Update lastSeen in DB
                 await User.findOneAndUpdate(
                     { username: socket.username },
                     { lastSeen: new Date() }
