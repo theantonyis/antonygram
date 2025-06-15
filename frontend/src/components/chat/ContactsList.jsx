@@ -262,7 +262,7 @@ const ContactsList = ({
                     {contacts.map((contact) => {
                         const isOnline = contact.isOnline;
                         const isSelected = selectedContact?.username === contact.username;
-                        const unread = unreadCounts[contact.id] || 0;
+                        const unread = unreadCounts[contact.username] || 0;
 
                         return (
                             <ListGroup.Item
