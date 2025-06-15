@@ -29,7 +29,7 @@ router.get('/:contactUsername', auth, async (req, res) => {
             ],
         })
         .sort({ timestamp: 1 })
-        .populate('replyTo', 'from text senderAvatar deleted');
+        .populate('replyTo', 'from file text senderAvatar deleted');
 
         res.json({ messages });
     } catch (err) {
@@ -118,7 +118,7 @@ router.get('/groups/:groupId', auth, async (req, res) => {
             isGroup: true
         })
             .sort({ timestamp: 1 })
-            .populate('replyTo', 'from text senderAvatar deleted');
+            .populate('replyTo', 'from text file senderAvatar deleted');
 
         res.json({ messages });
     } catch (err) {
