@@ -48,7 +48,13 @@ export const addUser = async (user) => {
   try {
     const salt = crypto.randomBytes(16).toString('hex');
     const password = crypto.pbkdf2Sync(user.password, salt, 1000, 64, 'sha512').toString('hex');
-    const newUser = new User({ username: user.username, password, salt });
+    const newUser = new User({
+      username: user.username,
+      password,
+      salt,
+      name: user.name || user.username,
+      ...(user.surname ? { surname: user.surname } : {})
+    });
     await newUser.save();
   } catch (err) {
     console.error('Error adding user:', err);

@@ -128,7 +128,6 @@ const Register = () => {
                                     placeholder="Enter your surname"
                                     value={surname}
                                     onChange={(e) => setSurname(e.target.value)}
-                                    required
                                     className="pl-10 pr-4 py-2 text-lg rounded-md border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
                                     style={{ paddingLeft: '2.5rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}
                                 />
