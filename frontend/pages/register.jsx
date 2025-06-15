@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
 import { useRouter } from 'next/router';
 import api from '@utils/axios.js';
-import { User, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, UserRound} from 'lucide-react';
 import Head from "next/head";
 
 const Register = () => {
